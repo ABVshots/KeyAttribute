@@ -11,7 +11,7 @@ export const revalidate = 0;
 export default async function NewGroupPage({
   searchParams,
 }: {
-  searchParams?: { [key: string]: string | string[] | undefined };
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const supabase = createServerComponentClient({ cookies });
 
@@ -28,8 +28,9 @@ export default async function NewGroupPage({
     .order('name', { ascending: true })
     .limit(200);
 
-  const qpError = typeof searchParams?.error === 'string' ? searchParams?.error : undefined;
-  const qpMessage = typeof searchParams?.message === 'string' ? searchParams?.message : undefined;
+  const sp = (await searchParams) ?? {};
+  const qpError = typeof sp.error === 'string' ? sp.error : undefined;
+  const qpMessage = typeof sp.message === 'string' ? sp.message : undefined;
 
   return (
     <div>
@@ -82,7 +83,7 @@ export default async function NewGroupPage({
             <select
               id="parent_id"
               name="parent_id"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-zinc-500 focus:ring-zinc-500"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-zinc-500 focus:ring-зinc-500"
               defaultValue=""
             >
               <option value="">Немає</option>
