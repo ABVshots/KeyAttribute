@@ -37,8 +37,9 @@ export default function LoginPage() {
         setEmail(normalizedEmail);
         setSubmitted(true);
       }
-    } catch (e: any) {
-      setErrorMsg(e?.message ?? 'Невідома помилка');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      setErrorMsg(message || 'Невідома помилка');
     } finally {
       setLoading(false);
     }
