@@ -10,11 +10,9 @@ type Attribute = {
 };
 
 function isAttr(x: unknown): x is Attribute {
-  return (
-    typeof x === 'object' && x !== null &&
-    typeof (x as any).label === 'string' &&
-    typeof (x as any).value === 'string'
-  );
+  if (typeof x !== 'object' || x === null) return false;
+  const obj = x as Record<string, unknown>;
+  return typeof obj.label === 'string' && typeof obj.value === 'string';
 }
 
 const MAX_INPUT_CHARS = 6000;
@@ -55,17 +53,22 @@ export default function AIAnalyzeComponent({ initialText = '' }: { initialText?:
         body: JSON.stringify({ text: trimmed }),
       });
 
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error((data as any)?.error || 'Невідома помилка');
+      const data: unknown = await response.json().catch(() => ({}));
+      const rec = (typeof data === 'object' && data !== null) ? (data as Record<string, unknown>) : {};
 
-      const attrs = (data as any)?.attributes as unknown;
-      if (!Array.isArray(attrs)) {
+      if (!response.ok) {
+        const maybeErr = rec['error'];
+        throw new Error(typeof maybeErr === 'string' ? maybeErr : 'Невідома помилка');
+      }
+
+      const attrsUnknown = rec['attributes'];
+      if (!Array.isArray(attrsUnknown)) {
         throw new Error('Неправильний формат відповіді від AI');
       }
-      const normalized: Attribute[] = attrs.filter(isAttr).map((a) => ({
-        label: a.label.trim(),
-        value: String(a.value).trim(),
-      }));
+
+      const normalized: Attribute[] = (attrsUnknown as unknown[])
+        .filter(isAttr)
+        .map((a) => ({ label: a.label.trim(), value: String(a.value).trim() }));
 
       setResults(normalized);
     } catch (e: unknown) {
