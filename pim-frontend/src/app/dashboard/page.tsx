@@ -1,6 +1,7 @@
 // File: pim-frontend/src/app/dashboard/page.tsx
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
+import SearchComponent from './SearchComponent';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -26,6 +27,10 @@ export default async function DashboardPage() {
     <div>
       <h1 className="text-3xl font-bold">Вітаємо на головній панелі!</h1>
       <p className="mt-2 text-gray-600">Ваш email: {user?.email}</p>
+
+      <div className="mt-8">
+        <SearchComponent />
+      </div>
 
       <div className="mt-8 rounded-lg border bg-white p-6 shadow-sm">
         <h2 className="text-xl font-semibold">Ваші товари</h2>
