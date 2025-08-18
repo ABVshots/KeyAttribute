@@ -200,7 +200,7 @@ export default function SearchComponent() {
                   onChange={(e) => setRemember(e.target.checked)}
                   disabled={loading}
                 />
-                Запам'ятовувати ці налаштування
+                Запам&rsquo;ятовувати ці налаштування
               </label>
               <button
                 type="button"

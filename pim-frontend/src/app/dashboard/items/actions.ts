@@ -118,6 +118,32 @@ export async function updateItem(itemId: string, formData: FormData) {
   redirect('/dashboard/items');
 }
 
+/** Тип результату пошуку */
+export type SearchResult = {
+  id: string;
+  sku: string;
+  title: string;
+  similarity: number;
+};
+
+/** Відповідь OpenAI Embeddings */
+type EmbeddingsResponse = {
+  data: Array<{ embedding: number[] }>;
+};
+
+function isEmbeddingsResponse(x: unknown): x is EmbeddingsResponse {
+  if (typeof x !== 'object' || x === null) return false;
+  const obj = x as Record<string, unknown>;
+  const data = obj['data'];
+  if (!Array.isArray(data) || data.length === 0) return false;
+  const first = data[0] as unknown;
+  if (typeof first !== 'object' || first === null) return false;
+  const emb = (first as Record<string, unknown>)['embedding'];
+  return Array.isArray(emb) && emb.every((n) => typeof n === 'number');
+}
+
+type SearchItemsResult = { data: SearchResult[] | null; error: string | null };
+
 /**
  * Пошук товарів за семантичною схожістю через pgvector RPC `search_items`.
  * Використовує OpenAI Embeddings для побудови вектору запиту.
@@ -125,16 +151,16 @@ export async function updateItem(itemId: string, formData: FormData) {
 export async function searchItems(
   query: string,
   opts?: { threshold?: number; limit?: number }
-) {
+): Promise<SearchItemsResult> {
   const q = (query ?? '').trim();
-  if (!q) return { data: [], error: null } as { data: any[]; error: string | null };
+  if (!q) return { data: [], error: null };
 
   const supabase = createServerActionClient({ cookies });
 
   const openaiApiKey = process.env.OPENAI_API_KEY;
   const embeddingModel = process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small';
   if (!openaiApiKey) {
-    return { data: null, error: 'OpenAI API key is not configured.' } as { data: any[] | null; error: string | null };
+    return { data: null, error: 'OpenAI API key is not configured.' };
   }
 
   const threshold = opts?.threshold ?? 0.7;
@@ -161,19 +187,26 @@ export async function searchItems(
     if (!resp.ok) {
       let details = 'Upstream error';
       try {
-        const err = await resp.json();
-        details = err?.error?.message || details;
+        const err = (await resp.json()) as unknown;
+        if (typeof err === 'object' && err && 'error' in err) {
+          const e = (err as Record<string, unknown>)['error'];
+          if (typeof e === 'object' && e && 'message' in (e as Record<string, unknown>)) {
+            const m = (e as Record<string, unknown>)['message'];
+            if (typeof m === 'string') details = m;
+          }
+        }
       } catch {
-        try { details = await resp.text(); } catch {}
+        try { details = await resp.text(); } catch { /* noop */ }
       }
-      return { data: null, error: details } as { data: any[] | null; error: string | null };
+      return { data: null, error: details };
     }
 
-    const embJson: any = await resp.json();
-    const queryEmbedding = embJson?.data?.[0]?.embedding as number[] | undefined;
-    if (!queryEmbedding || !Array.isArray(queryEmbedding)) {
-      return { data: null, error: 'Invalid embedding response' } as { data: any[] | null; error: string | null };
+    const embUnknown: unknown = await resp.json();
+    if (!isEmbeddingsResponse(embUnknown)) {
+      return { data: null, error: 'Invalid embedding response' };
     }
+
+    const queryEmbedding = embUnknown.data[0].embedding;
 
     // 2. Викликаємо RPC у БД (RLS застосовується завдяки cookies)
     const { data, error } = await supabase.rpc('search_items', {
@@ -182,11 +215,13 @@ export async function searchItems(
       match_count: limit,
     });
 
-    if (error) return { data: null, error: error.message } as { data: any[] | null; error: string | null };
-    return { data: data ?? [], error: null } as { data: any[]; error: string | null };
+    if (error) {
+      return { data: null, error: error.message };
+    }
+    return { data: (data ?? []) as SearchResult[], error: null };
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : String(e);
     const errorText = message === 'timeout' ? 'Embedding request timed out' : message;
-    return { data: null, error: errorText } as { data: any[] | null; error: string | null };
+    return { data: null, error: errorText };
   }
 }

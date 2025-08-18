@@ -10,6 +10,10 @@ import EmbeddingComponent from './EmbeddingComponent';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+type AttrRow = { id: string; label: string; root_feature_id: string | null };
+type FeatureRow = { id: string; name: string };
+type ItemFeatureRow = { feature_attribute_id: string; feature_id: string };
+
 export default async function EditItemPage({ params }: { params: { id: string } }) {
   const supabase = createServerComponentClient({ cookies });
 
@@ -30,7 +34,7 @@ export default async function EditItemPage({ params }: { params: { id: string } 
   // 2. Завантажуємо всі доступні атрибути для цієї організації (стабільне сортування)
   const { data: attributes } = await supabase
     .from('feature_attributes')
-    .select('*')
+    .select('id, label, root_feature_id')
     .order('label', { ascending: true })
     .order('code', { ascending: true });
 
@@ -50,9 +54,9 @@ export default async function EditItemPage({ params }: { params: { id: string } 
     .maybeSingle();
 
   // 5. Формуємо початковий текст для AI: Назва + SKU + Опис + Атрибути
-  const attrLabelMap = new Map((attributes ?? []).map((a: any) => [a.id, a.label]));
-  const featureNameMap = new Map((features ?? []).map((f: any) => [f.id, f.name]));
-  const pairs = (item.item_features ?? []).map((f: any) => {
+  const attrLabelMap = new Map((attributes as AttrRow[] ?? []).map((a) => [a.id, a.label]));
+  const featureNameMap = new Map((features as FeatureRow[] ?? []).map((f) => [f.id, f.name]));
+  const pairs = ((item.item_features as ItemFeatureRow[] | null) ?? []).map((f) => {
     const label = attrLabelMap.get(f.feature_attribute_id) ?? f.feature_attribute_id;
     const value = featureNameMap.get(f.feature_id) ?? f.feature_id;
     return `${label}: ${value}`;
@@ -80,7 +84,7 @@ export default async function EditItemPage({ params }: { params: { id: string } 
 
       <EditItemForm
         item={item}
-        attributes={attributes ?? []}
+        attributes={(attributes as AttrRow[] ?? [])}
         features={features ?? []}
       />
 

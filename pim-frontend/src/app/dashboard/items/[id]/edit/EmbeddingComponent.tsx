@@ -56,7 +56,7 @@ export default function EmbeddingComponent({ itemId }: { itemId: string }) {
         <div>
           <h2 className="text-xl font-semibold">Семантичний Пошук</h2>
           <p className="mt-1 text-sm text-gray-500">
-            Створіть векторний "відбиток" товару для "розумного" пошуку.
+            Створіть векторний &quot;відбиток&quot; товару для &quot;розумного&quot; пошуку.
           </p>
         </div>
         <button

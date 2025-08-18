@@ -22,7 +22,9 @@ function clampLimit(l?: number) {
   return Math.min(50, Math.max(1, Math.floor(l)));
 }
 
-function noStoreJson(body: any, init?: { status?: number }) {
+type JsonBody = { query?: unknown; threshold?: unknown; limit?: unknown };
+
+function noStoreJson<T>(body: T, init?: { status?: number }) {
   return NextResponse.json(body, {
     status: init?.status ?? 200,
     headers: { 'Cache-Control': 'no-store' },
@@ -56,9 +58,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    let body: any = null;
+    let body: JsonBody | null = null;
     try {
-      body = await request.json();
+      body = (await request.json()) as JsonBody;
     } catch {
       return noStoreJson({ error: 'Invalid JSON' }, { status: 400 });
     }

@@ -9,6 +9,14 @@ type Attribute = {
   value: string;
 };
 
+function isAttr(x: unknown): x is Attribute {
+  return (
+    typeof x === 'object' && x !== null &&
+    typeof (x as any).label === 'string' &&
+    typeof (x as any).value === 'string'
+  );
+}
+
 const MAX_INPUT_CHARS = 6000;
 
 export default function AIAnalyzeComponent({ initialText = '' }: { initialText?: string }) {
@@ -48,16 +56,16 @@ export default function AIAnalyzeComponent({ initialText = '' }: { initialText?:
       });
 
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data?.error || 'Невідома помилка');
+      if (!response.ok) throw new Error((data as any)?.error || 'Невідома помилка');
 
-      const attrs = data?.attributes;
+      const attrs = (data as any)?.attributes as unknown;
       if (!Array.isArray(attrs)) {
         throw new Error('Неправильний формат відповіді від AI');
       }
-      // базова нормалізація
-      const normalized: Attribute[] = attrs
-        .filter((a: any) => a && typeof a.label === 'string' && typeof a.value === 'string')
-        .map((a: any) => ({ label: a.label.trim(), value: a.value.toString().trim() }));
+      const normalized: Attribute[] = attrs.filter(isAttr).map((a) => ({
+        label: a.label.trim(),
+        value: String(a.value).trim(),
+      }));
 
       setResults(normalized);
     } catch (e: unknown) {
