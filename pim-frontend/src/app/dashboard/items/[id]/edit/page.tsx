@@ -14,8 +14,9 @@ type AttrRow = { id: string; label: string; root_feature_id: string | null };
 type FeatureRow = { id: string; name: string };
 type ItemFeatureRow = { feature_attribute_id: string; feature_id: string };
 
-export default async function EditItemPage({ params }: { params: { id: string } }) {
+export default async function EditItemPage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = createServerComponentClient({ cookies });
+  const { id } = await params;
 
   // 1. Завантажуємо сам товар та його поточні атрибути
   const { data: item, error } = await supabase
@@ -24,7 +25,7 @@ export default async function EditItemPage({ params }: { params: { id: string } 
       *,
       item_features ( feature_attribute_id, feature_id )
     `)
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   if (error || !item) {
