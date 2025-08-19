@@ -60,8 +60,17 @@ export async function testCartumConnection(formData: FormData): Promise<ActionSt
       },
       body: JSON.stringify({ integration_id: integrationId }),
     });
-    const data = await resp.json().catch(() => ({}));
-    if (!resp.ok) return { error: (data as any)?.error || 'Помилка перевірки підключення' };
+
+    const raw: unknown = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      let msg = 'Помилка перевірки підключення';
+      if (typeof raw === 'object' && raw !== null) {
+        const rec = raw as Record<string, unknown>;
+        const err = rec['error'];
+        if (typeof err === 'string') msg = err;
+      }
+      return { error: msg };
+    }
     return { ok: 'auth' };
   } catch (e: unknown) {
     return { error: e instanceof Error ? e.message : String(e) };

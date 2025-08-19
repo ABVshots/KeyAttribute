@@ -6,6 +6,14 @@ import SyncComponent from './SyncComponent';
 
 export const dynamic = 'force-dynamic';
 
+type IntegrationRow = {
+  id: string;
+  organization_id: string;
+  status: string | null;
+  credentials_vault_ref: string | null;
+  settings: { domain?: string } | null;
+};
+
 export default async function IntegrationsPage() {
   const supabase = createServerComponentClient({ cookies });
 
@@ -13,7 +21,10 @@ export default async function IntegrationsPage() {
     .from('integrations')
     .select('id, organization_id, settings, status, credentials_vault_ref')
     .eq('platform', 'cartum')
-    .maybeSingle();
+    .maybeSingle<IntegrationRow>();
+
+  const domain = integration?.settings?.domain ?? '';
+  const secretName = integration?.credentials_vault_ref ?? '';
 
   return (
     <div>
@@ -22,8 +33,8 @@ export default async function IntegrationsPage() {
 
       <SettingsForm
         defaults={{
-          domain: (integration?.settings as any)?.domain || '',
-          secretName: integration?.credentials_vault_ref || '',
+          domain,
+          secretName,
         }}
       />
 
