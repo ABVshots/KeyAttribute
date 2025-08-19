@@ -27,7 +27,7 @@ function Notice({ state }: { state: ActionState }) {
 }
 
 export function SettingsForm({ defaults }: { defaults: { domain: string; secretName: string } }) {
-  const [state, action] = useActionState(saveCartumIntegrationAction as any, {} as ActionState);
+  const [state, action] = useActionState<ActionState, FormData>(saveCartumIntegrationAction, {} as ActionState);
   return (
     <form action={action} className="mt-8 max-w-xl rounded-lg border bg-white p-8 shadow-sm">
       <div className="space-y-6">
@@ -39,7 +39,7 @@ export function SettingsForm({ defaults }: { defaults: { domain: string; secretN
         <div>
           <label htmlFor="secretName" className="block text-sm font-medium text-gray-700">Назва секрету</label>
           <input id="secretName" name="secretName" type="text" required defaultValue={defaults.secretName} placeholder="cartum_credentials_prod" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-zinc-500 focus:ring-zinc-500" />
-          <p className="mt-1 text-xs text-gray-500">Створіть секрет у Supabase Edge Functions → Secrets з JSON: {'{'}"login":"…","password":"…"{'}'}</p>
+          <p className="mt-1 text-xs text-gray-500">Створіть секрет у Supabase Edge Functions → Secrets з JSON: {'{'}&quot;login&quot;:&quot;…&quot;,&quot;password&quot;:&quot;…&quot;{'}'}</p>
         </div>
       </div>
       <div className="mt-8 flex justify-end gap-3">
@@ -51,9 +51,9 @@ export function SettingsForm({ defaults }: { defaults: { domain: string; secretN
 }
 
 export function QuickActions({ integrationId, organizationId }: { integrationId: string; organizationId: string }) {
-  const [stateTest, actionTest] = useActionState(testCartumConnectionAction as any, {} as ActionState);
-  const [stateCat, actionCat] = useActionState(queueSyncCategoriesAction as any, {} as ActionState);
-  const [statePull, actionPull] = useActionState(queuePullProductsAction as any, {} as ActionState);
+  const [stateTest, actionTest] = useActionState<ActionState, FormData>(testCartumConnectionAction, {} as ActionState);
+  const [stateCat, actionCat] = useActionState<ActionState, FormData>(queueSyncCategoriesAction, {} as ActionState);
+  const [statePull, actionPull] = useActionState<ActionState, FormData>(queuePullProductsAction, {} as ActionState);
 
   return (
     <div className="mt-8 max-w-xl rounded-lg border bg-white p-8 shadow-sm">

@@ -1,7 +1,11 @@
 // File: pim-frontend/src/app/dashboard/integrations/SyncComponent.tsx
 'use client';
 import { useState } from 'react';
+import Link from 'next/link';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+
+type CartumAuthResponse = { token?: string; expires_at?: number; error?: string };
+type SyncCategoriesResponse = { success?: boolean; message?: string; queued?: number; job_id?: string; error?: string };
 
 export default function SyncComponent({ integrationId }: { integrationId: string }) {
   const [loading, setLoading] = useState<string>('');
@@ -10,24 +14,20 @@ export default function SyncComponent({ integrationId }: { integrationId: string
   const [jobId, setJobId] = useState<string | null>(null);
   const supabase = createClientComponentClient();
 
-  const callFunction = async (functionName: string, body: Record<string, unknown>) => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Not authenticated');
-      const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      if (!baseUrl) throw new Error('Base URL is not configured');
-      const resp = await fetch(`${baseUrl}/functions/v1/${functionName}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify(body),
-      });
-      const data = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error(data?.error || 'Upstream error');
-      return data as { success?: boolean; message?: string; queued?: number; job_id?: string };
-    } catch (e: unknown) {
-      throw new Error(e instanceof Error ? e.message : String(e));
-    }
-  };
+  async function callFunction<T>(functionName: string, body: Record<string, unknown>): Promise<T> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated');
+    const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!baseUrl) throw new Error('Base URL is not configured');
+    const resp = await fetch(`${baseUrl}/functions/v1/${functionName}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify(body),
+    });
+    const data = (await resp.json().catch(() => ({}))) as T & { error?: string };
+    if (!resp.ok) throw new Error(data?.error || 'Upstream error');
+    return data;
+  }
 
   const handleSyncCategories = async () => {
     setLoading('categories');
@@ -35,12 +35,10 @@ export default function SyncComponent({ integrationId }: { integrationId: string
     setQueued(null);
     setJobId(null);
     try {
-      const res = await callFunction('cartum-sync-categories', { integration_id: integrationId });
-      const queuedVal = (res as any)?.queued;
-      const job = (res as any)?.job_id;
-      setMessage((res as any)?.message || 'Синхронізацію запущено');
-      if (typeof queuedVal === 'number') setQueued(queuedVal);
-      if (typeof job === 'string') setJobId(job);
+      const res = await callFunction<SyncCategoriesResponse>('cartum-sync-categories', { integration_id: integrationId });
+      setMessage(res.message || 'Синхронізацію запущено');
+      if (typeof res.queued === 'number') setQueued(res.queued);
+      if (typeof res.job_id === 'string') setJobId(res.job_id);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       setMessage(`Помилка: ${msg}`);
@@ -55,11 +53,10 @@ export default function SyncComponent({ integrationId }: { integrationId: string
     setQueued(null);
     setJobId(null);
     try {
-      const res = await callFunction('cartum-auth', { integration_id: integrationId });
-      const expiresAt = (res as any)?.expires_at;
+      const res = await callFunction<CartumAuthResponse>('cartum-auth', { integration_id: integrationId });
       let suffix = '';
-      if (typeof expiresAt === 'number') {
-        const sec = Math.max(0, Math.floor(expiresAt - Date.now() / 1000));
+      if (typeof res.expires_at === 'number') {
+        const sec = Math.max(0, Math.floor(res.expires_at - Date.now() / 1000));
         suffix = ` (дійсний ~${sec}s)`;
       }
       setMessage(`З’єднання успішне${suffix}`);
@@ -102,7 +99,7 @@ export default function SyncComponent({ integrationId }: { integrationId: string
           {jobId ? (
             <>
               {`, job: `}
-              <a href={`/dashboard/import/${jobId}`} className="text-zinc-800 underline">перейти до завдання</a>
+              <Link href={`/dashboard/import/${jobId}`} className="text-zinc-800 underline">перейти до завдання</Link>
             </>
           ) : ''}
         </p>
