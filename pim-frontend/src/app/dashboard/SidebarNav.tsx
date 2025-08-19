@@ -11,6 +11,7 @@ export default function SidebarNav() {
     { href: '/dashboard/items', label: 'Товари', isActive: (p: string) => p.startsWith('/dashboard/items') },
     { href: '/dashboard/groups', label: 'Групи', isActive: (p: string) => p.startsWith('/dashboard/groups') },
     { href: '/dashboard/features', label: 'Довідники', isActive: (p: string) => p.startsWith('/dashboard/features') },
+    { href: '/dashboard/integrations', label: 'Інтеграції', isActive: (p: string) => p.startsWith('/dashboard/integrations') },
     { href: '/dashboard/prompts', label: 'AI Промти', isActive: (p: string) => p.startsWith('/dashboard/prompts') },
   ];
 
