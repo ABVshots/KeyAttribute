@@ -31,7 +31,6 @@ function SelectExistingModal({ groupId, onClose }: { groupId: string; onClose: (
     if (ids.length === 0) return onClose();
     setSubmitting(true);
     try {
-      // batch move each selected under current group
       for (const id of ids) {
         const res = await fetch('/dashboard/groups/move', {
           method: 'POST',

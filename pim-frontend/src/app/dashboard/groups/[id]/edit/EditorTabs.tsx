@@ -1,6 +1,26 @@
 'use client';
 
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, startTransition, type FormEvent } from 'react';
+import { useActionState } from 'react';
+import { useRouter } from 'next/navigation';
+import {
+  updateGroupNamesAllLocalesAction,
+  type NamesActionState,
+  upsertGroupTextsAction,
+  reorderGroupTextsAction,
+  deleteGroupTextAction,
+  type TextsActionState,
+  upsertGroupPropertiesAction,
+  deleteGroupPropertyAction,
+  type PropertiesActionState,
+  addGroupNoteAction,
+  deleteGroupNoteAction,
+  updateGroupNoteAction,
+  reorderGroupNotesAction,
+  type NotesActionState,
+  setGroupCoverUrlAction,
+  type MediaActionState,
+} from '../../actions';
 
 function useToast() {
   const [msg, setMsg] = useState<string | null>(null);
@@ -32,15 +52,20 @@ export default function EditorTabs({ groupId }: { groupId: string }) {
 
 function NamesTab({ groupId, toast }: { groupId: string; toast: ReturnType<typeof useToast> }) {
   const [rows, setRows] = useState<Array<{ locale: string; label: string; value: string }>>([]);
-  const [saving, setSaving] = useState(false);
+  const router = useRouter();
+  const [state, formAction, pending] = useActionState<NamesActionState, FormData>(updateGroupNamesAllLocalesAction, {} as NamesActionState);
   useEffect(() => { void (async () => {
     const res = await fetch(`/dashboard/groups/tree/names/locales?group_id=${encodeURIComponent(groupId)}`);
     if (res.ok) { const data = await res.json(); setRows(data.locales ?? []); }
   })(); }, [groupId]);
   async function save(e: FormEvent) {
-    e.preventDefault(); setSaving(true);
-    try { await fetch(`/dashboard/groups/tree/names/locales`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ group_id: groupId, entries: rows.map(r=>({ locale:r.locale, name:r.value })) }) }); toast.ok('Збережено'); }
-    finally { setSaving(false); }
+    e.preventDefault();
+    const fd = new FormData();
+    fd.append('group_id', groupId);
+    fd.append('entries', JSON.stringify(rows.map(r=>({ locale:r.locale, name:r.value }))));
+    startTransition(() => { formAction(fd); });
+    toast.ok('Збережено');
+    router.refresh();
   }
   return (
     <form onSubmit={save} className="space-y-2">
@@ -51,7 +76,7 @@ function NamesTab({ groupId, toast }: { groupId: string; toast: ReturnType<typeo
         </div>
       ))}
       <div className="flex justify-end gap-2">
-        <button type="submit" disabled={saving} className="rounded bg-zinc-800 px-3 py-1 text-xs text-white disabled:opacity-60">{saving?'Збереження…':'Зберегти'}</button>
+        <button type="submit" disabled={pending} className="rounded bg-zinc-800 px-3 py-1 text-xs text-white disabled:opacity-60">{pending?'Збереження…':'Зберегти'}</button>
       </div>
     </form>
   );
@@ -61,8 +86,11 @@ function DescriptionsMultiTab({ groupId, toast }: { groupId: string; toast: Retu
   const [items, setItems] = useState<Array<{ id?: string; locale: string | null; key: string; content: string; sort_order?: number }>>([]);
   const [locales, setLocales] = useState<Array<{ code: string; label: string }>>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
+  const router = useRouter();
+  const [upsertState, upsertAction, upserting] = useActionState<TextsActionState, FormData>(upsertGroupTextsAction, {} as TextsActionState);
+  const [reorderState, reorderAction] = useActionState<TextsActionState, FormData>(reorderGroupTextsAction, {} as TextsActionState);
+  const [deleteState, deleteAction] = useActionState<TextsActionState, FormData>(deleteGroupTextAction, {} as TextsActionState);
 
   useEffect(() => { void (async () => {
     setLoading(true);
@@ -75,8 +103,24 @@ function DescriptionsMultiTab({ groupId, toast }: { groupId: string; toast: Retu
   })(); }, [groupId]);
 
   function addNew() { setItems(prev => [...prev, { locale: locales[0]?.code ?? null, key: 'description', content: '' }]); }
-  async function saveAll() { setSaving(true); try { await fetch(`/dashboard/groups/edit/texts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ group_id: groupId, key: 'description', items }) }); toast.ok('Збережено'); } finally { setSaving(false); } }
-  async function remove(id?: string, idx?: number) { if (id) await fetch(`/dashboard/groups/edit/texts?id=${encodeURIComponent(id)}`, { method: 'DELETE' }); setItems(prev => prev.filter((_, i) => i !== idx)); toast.ok('Видалено'); }
+  async function saveAll() {
+    const fd = new FormData();
+    fd.append('group_id', groupId);
+    fd.append('key', 'description');
+    fd.append('items', JSON.stringify(items));
+    startTransition(() => { upsertAction(fd); });
+    toast.ok('Збережено');
+    router.refresh();
+  }
+  async function remove(id?: string, idx?: number) {
+    if (!id) { setItems(prev => prev.filter((_, i) => i !== idx)); return; }
+    const fd = new FormData();
+    fd.append('group_id', groupId);
+    fd.append('id', id);
+    startTransition(() => { deleteAction(fd); });
+    setItems(prev => prev.filter((_, i) => i !== idx));
+    toast.ok('Видалено');
+  }
 
   function onDragStart(e: React.DragEvent, id: string) { setDragId(id); e.dataTransfer.effectAllowed = 'move'; }
   function onDragOver(e: React.DragEvent) { e.preventDefault(); }
@@ -91,7 +135,10 @@ function DescriptionsMultiTab({ groupId, toast }: { groupId: string; toast: Retu
     const reordered = current.map((n, idx) => ({ ...n, sort_order: idx }));
     setItems(reordered);
     setDragId(null);
-    await fetch(`/dashboard/groups/edit/texts`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order: reordered.filter(n=>n.id).map(n => ({ id: n.id!, sort_order: n.sort_order ?? 0 })) }) });
+    const fd = new FormData();
+    fd.append('group_id', groupId);
+    fd.append('order', JSON.stringify(reordered.filter(n=>n.id).map(n => ({ id: n.id!, sort_order: n.sort_order ?? 0 }))));
+    startTransition(() => { reorderAction(fd); });
     toast.ok('Порядок збережено');
   }
 
@@ -110,7 +157,7 @@ function DescriptionsMultiTab({ groupId, toast }: { groupId: string; toast: Retu
       ))}
       <div className="flex justify-between">
         <button onClick={addNew} className="rounded border px-3 py-1 text-xs">+ Додати опис</button>
-        <button onClick={saveAll} disabled={saving} className="rounded bg-zinc-800 px-3 py-1 text-xs text-white disabled:opacity-60">{saving?'Збереження…':'Зберегти'}</button>
+        <button onClick={saveAll} disabled={upserting} className="rounded bg-zinc-800 px-3 py-1 text-xs text-white disabled:opacity-60">{upserting?'Збереження…':'Зберегти'}</button>
       </div>
     </div>
   );
@@ -118,15 +165,20 @@ function DescriptionsMultiTab({ groupId, toast }: { groupId: string; toast: Retu
 
 function MediaTab({ groupId, toast }: { groupId: string; toast: ReturnType<typeof useToast> }) {
   const [url, setUrl] = useState('');
-  const [saving, setSaving] = useState(false);
+  const router = useRouter();
+  const [state, action, pending] = useActionState<MediaActionState, FormData>(setGroupCoverUrlAction, {} as MediaActionState);
   useEffect(() => { void (async () => {
     const res = await fetch(`/dashboard/groups/tree/names/media?group_id=${encodeURIComponent(groupId)}`);
     if (res.ok) { const data = await res.json(); setUrl(data.cover_url ?? ''); }
   })(); }, [groupId]);
   async function save(e: FormEvent) {
-    e.preventDefault(); setSaving(true);
-    try { await fetch(`/dashboard/groups/tree/names/media`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ group_id: groupId, url }) }); toast.ok('Збережено'); }
-    finally { setSaving(false); }
+    e.preventDefault();
+    const fd = new FormData();
+    fd.append('group_id', groupId);
+    fd.append('url', url);
+    startTransition(() => { action(fd); });
+    toast.ok('Збережено');
+    router.refresh();
   }
   const valid = useMemo(() => /^https?:\/\//i.test(url), [url]);
   return (
@@ -141,7 +193,7 @@ function MediaTab({ groupId, toast }: { groupId: string; toast: ReturnType<typeo
         </div>
       )}
       <div className="flex justify-end gap-2">
-        <button type="submit" disabled={saving} className="rounded bg-zinc-800 px-3 py-1 text-xs text-white disabled:opacity-60">{saving?'Збереження…':'Зберегти'}</button>
+        <button type="submit" disabled={pending} className="rounded bg-zinc-800 px-3 py-1 text-xs text-white disabled:opacity-60">{pending?'Збереження…':'Зберегти'}</button>
       </div>
     </form>
   );
@@ -150,9 +202,13 @@ function MediaTab({ groupId, toast }: { groupId: string; toast: ReturnType<typeo
 function NotesTab({ groupId, toast }: { groupId: string; toast: ReturnType<typeof useToast> }) {
   const [items, setItems] = useState<Array<{ id: string; content: string; created_at: string; sort_order?: number }>>([]);
   const [text, setText] = useState('');
-  const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState<{ id: string; content: string } | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
+  const router = useRouter();
+  const [addState, addAction, adding] = useActionState<NotesActionState, FormData>(addGroupNoteAction, {} as NotesActionState);
+  const [delState, delAction] = useActionState<NotesActionState, FormData>(deleteGroupNoteAction, {} as NotesActionState);
+  const [updState, updAction, updating] = useActionState<NotesActionState, FormData>(updateGroupNoteAction, {} as NotesActionState);
+  const [reorderState, reorderAction] = useActionState<NotesActionState, FormData>(reorderGroupNotesAction, {} as NotesActionState);
 
   useEffect(() => { void reload(); }, [groupId]);
   async function reload() {
@@ -160,19 +216,18 @@ function NotesTab({ groupId, toast }: { groupId: string; toast: ReturnType<typeo
     if (res.ok) { const data = await res.json(); setItems(data.notes ?? []); }
   }
   async function add(e: FormEvent) {
-    e.preventDefault(); if (!text.trim()) return; setSaving(true);
-    try { await fetch(`/dashboard/groups/tree/names/notes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ group_id: groupId, content: text }) }); setText(''); await reload(); toast.ok('Додано'); }
-    finally { setSaving(false); }
+    e.preventDefault(); if (!text.trim()) return;
+    const fd = new FormData(); fd.append('group_id', groupId); fd.append('content', text.trim());
+    startTransition(() => { addAction(fd); }); setText(''); await reload(); toast.ok('Додано');
   }
   async function remove(id: string) {
-    await fetch(`/dashboard/groups/tree/names/notes?id=${encodeURIComponent(id)}`, { method: 'DELETE', cache: 'no-store' });
-    setItems(prev => prev.filter(n => n.id !== id));
-    toast.ok('Видалено');
+    const fd = new FormData(); fd.append('group_id', groupId); fd.append('id', id);
+    startTransition(() => { delAction(fd); }); setItems(prev => prev.filter(n => n.id !== id)); toast.ok('Видалено');
   }
   async function saveEdit(id: string) {
-    if (!editing) return; setSaving(true);
-    try { await fetch(`/dashboard/groups/tree/names/notes`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editing) }); setItems(prev => prev.map(n => n.id === id ? { ...n, content: editing.content } : n)); setEditing(null); toast.ok('Збережено'); }
-    finally { setSaving(false); }
+    if (!editing) return;
+    const fd = new FormData(); fd.append('group_id', groupId); fd.append('id', id); fd.append('content', editing.content);
+    startTransition(() => { updAction(fd); }); setItems(prev => prev.map(n => n.id === id ? { ...n, content: editing.content } : n)); setEditing(null); toast.ok('Збережено');
   }
   function onDragStart(e: any, id: string) { setDragId(id); if (e?.dataTransfer) e.dataTransfer.effectAllowed = 'move'; }
   function onDragOver(e: any) { if (e?.preventDefault) e.preventDefault(); }
@@ -187,7 +242,8 @@ function NotesTab({ groupId, toast }: { groupId: string; toast: ReturnType<typeo
     const reordered = current.map((n, idx) => ({ ...n, sort_order: idx }));
     setItems(reordered);
     setDragId(null);
-    await fetch(`/dashboard/groups/tree/names/notes`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ group_id: groupId, order: reordered.map(n => ({ id: n.id, sort_order: n.sort_order ?? 0 })) }) });
+    const fd = new FormData(); fd.append('group_id', groupId); fd.append('order', JSON.stringify(reordered.map(n => ({ id: n.id, sort_order: n.sort_order ?? 0 }))));
+    startTransition(() => { reorderAction(fd); });
     toast.ok('Порядок збережено');
   }
 
@@ -196,7 +252,7 @@ function NotesTab({ groupId, toast }: { groupId: string; toast: ReturnType<typeo
       <form onSubmit={add} className="space-y-2">
         <textarea className="w-full rounded border px-2 py-1 text-sm" rows={4} value={text} onChange={(e)=>setText(e.target.value)} />
         <div className="flex justify-end gap-2">
-          <button type="submit" disabled={saving} className="rounded bg-zinc-800 px-3 py-1 text-xs text-white disabled:opacity-60">{saving?'Збереження…':'Додати'}</button>
+          <button type="submit" disabled={adding} className="rounded bg-zinc-800 px-3 py-1 text-xs text-white disabled:opacity-60">{adding?'Збереження…':'Додати'}</button>
         </div>
       </form>
       <div className="space-y-1 text-xs">
@@ -207,7 +263,7 @@ function NotesTab({ groupId, toast }: { groupId: string; toast: ReturnType<typeo
               <>
                 <textarea className="mt-1 w-full rounded border px-2 py-1 text-sm" rows={4} value={editing.content} onChange={(e)=>setEditing({ ...editing, content: e.target.value })} />
                 <div className="mt-2 flex gap-2">
-                  <button onClick={()=>saveEdit(n.id)} disabled={saving} className="rounded bg-zinc-800 px-2 py-1 text-white disabled:opacity-60">{saving?'Збереження…':'Зберегти'}</button>
+                  <button onClick={()=>saveEdit(n.id)} disabled={updating} className="rounded bg-zinc-800 px-2 py-1 text-white disabled:opacity-60">{updating?'Збереження…':'Зберегти'}</button>
                   <button onClick={()=>setEditing(null)} className="rounded border px-2 py-1">Скасувати</button>
                 </div>
               </>
@@ -230,7 +286,9 @@ function NotesTab({ groupId, toast }: { groupId: string; toast: ReturnType<typeo
 function PropertiesTab({ groupId, toast }: { groupId: string; toast: ReturnType<typeof useToast> }) {
   const [items, setItems] = useState<Array<{ id?: string; key: string; value_text?: string }>>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const router = useRouter();
+  const [propsState, propsAction, propsPending] = useActionState<PropertiesActionState, FormData>(upsertGroupPropertiesAction, {} as PropertiesActionState);
+  const [delPropsState, delPropsAction] = useActionState<PropertiesActionState, FormData>(deleteGroupPropertyAction, {} as PropertiesActionState);
 
   useEffect(() => { void (async () => { setLoading(true); try {
     const res = await fetch(`/dashboard/groups/edit/properties?group_id=${encodeURIComponent(groupId)}`);
@@ -238,8 +296,23 @@ function PropertiesTab({ groupId, toast }: { groupId: string; toast: ReturnType<
   } finally { setLoading(false); } })(); }, [groupId]);
 
   function addNew() { setItems(prev => [...prev, { key: '', value_text: '' }]); }
-  async function saveAll() { setSaving(true); try { await fetch(`/dashboard/groups/edit/properties`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ group_id: groupId, items }) }); toast.ok('Збережено'); } finally { setSaving(false); } }
-  async function removeItem(id?: string, idx?: number) { if (id) await fetch(`/dashboard/groups/edit/properties?id=${encodeURIComponent(id)}`, { method: 'DELETE' }); setItems(prev => prev.filter((_, i) => i !== idx)); toast.ok('Видалено'); }
+  async function saveAll() {
+    const fd = new FormData();
+    fd.append('group_id', groupId);
+    fd.append('items', JSON.stringify(items));
+    startTransition(() => { propsAction(fd); });
+    toast.ok('Збережено');
+    router.refresh();
+  }
+  async function removeItem(id?: string, idx?: number) {
+    if (!id) { setItems(prev => prev.filter((_, i) => i !== idx)); return; }
+    const fd = new FormData();
+    fd.append('group_id', groupId);
+    fd.append('id', id);
+    startTransition(() => { delPropsAction(fd); });
+    setItems(prev => prev.filter((_, i) => i !== idx));
+    toast.ok('Видалено');
+  }
 
   if (loading) return <p className="text-sm text-gray-500">Завантаження…</p>;
   return (
@@ -253,7 +326,7 @@ function PropertiesTab({ groupId, toast }: { groupId: string; toast: ReturnType<
       ))}
       <div className="flex justify-between">
         <button onClick={addNew} className="rounded border px-3 py-1 text-xs">+ Додати властивість</button>
-        <button onClick={saveAll} disabled={saving} className="rounded bg-zinc-800 px-3 py-1 text-xs text-white disabled:opacity-60">{saving?'Збереження…':'Зберегти'}</button>
+        <button onClick={saveAll} disabled={propsPending} className="rounded bg-zinc-800 px-3 py-1 text-xs text-white disabled:opacity-60">{propsPending?'Збереження…':'Зберегти'}</button>
       </div>
     </div>
   );
