@@ -7,8 +7,8 @@ import { createClient } from '@supabase/supabase-js';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export async function GET(req: NextRequest, ctx: { params: { job_id: string } }) {
-  const { job_id } = ctx.params;
+export async function GET(req: NextRequest, ctx: any) {
+  const { job_id } = (ctx?.params ?? {}) as { job_id: string };
   const url = new URL(req.url);
   const wantMeta = url.searchParams.get('meta') === '1';
   const wantDownload = url.searchParams.get('download') === '1';
