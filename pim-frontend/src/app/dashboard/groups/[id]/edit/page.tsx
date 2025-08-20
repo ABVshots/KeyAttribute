@@ -24,9 +24,9 @@ async function getGroupChain(supabase: any, id: string) {
   return chain;
 }
 
-export default async function GroupEditorPage({ params }: { params: { id: string } }) {
+export default async function GroupEditorPage(props: any) {
   const supabase = createServerComponentClient({ cookies });
-  const groupId = params.id;
+  const groupId: string = String(props?.params?.id || '');
 
   const { data: group } = await supabase
     .from('groups')
