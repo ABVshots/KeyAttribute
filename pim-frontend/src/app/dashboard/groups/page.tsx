@@ -61,7 +61,12 @@ export default async function GroupsPage() {
               {!error && typedGroups && typedGroups.length > 0 && (
                 typedGroups.map((group) => (
                   <tr key={group.id}>
-                    <td className="px-6 py-4 font-medium">{group.name}</td>
+                    <td className="px-6 py-4 font-medium">
+                      <div className="flex items-center gap-3">
+                        <span>{group.name}</span>
+                        <Link href={`/dashboard/groups/${group.id}/edit`} className="text-xs text-zinc-700 underline">Редагувати</Link>
+                      </div>
+                    </td>
                     <td className="px-6 py-4 text-gray-600">{group.group_types?.label ?? '—'}</td>
                   </tr>
                 ))

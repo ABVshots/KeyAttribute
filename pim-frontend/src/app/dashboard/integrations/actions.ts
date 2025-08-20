@@ -117,8 +117,50 @@ export async function queuePullProducts(formData: FormData): Promise<ActionState
   return { ok: 'pull_products', jobId: data?.id };
 }
 
+export async function deleteJob(formData: FormData): Promise<ActionState> {
+  const supabase = createServerActionClient({ cookies });
+  const jobId = String(formData.get('job_id') ?? '');
+  const orgId = String(formData.get('organization_id') ?? '');
+  if (!jobId || !orgId) return { error: 'Невірні параметри' };
+  const { error } = await supabase.from('jobs').delete().eq('id', jobId).eq('organization_id', orgId);
+  if (error) return { error: error.message };
+  revalidatePath('/dashboard/integrations');
+  return { ok: 'deleted' };
+}
+
+export async function pruneOldJobs(formData: FormData): Promise<ActionState> {
+  const supabase = createServerActionClient({ cookies });
+  const orgId = String(formData.get('organization_id') ?? '');
+  if (!orgId) return { error: 'Організацію не знайдено' };
+  const kinds = ['cartum_sync_categories', 'process_staged_categories', 'cartum_pull_products', 'process_staged_products'];
+  const { data: rows, error } = await supabase
+    .from('jobs')
+    .select('id, created_at')
+    .eq('organization_id', orgId)
+    .in('kind', kinds)
+    .order('created_at', { ascending: false });
+  if (error) return { error: error.message };
+  const ids = (rows ?? []).slice(3).map((r) => r.id as string);
+  if (ids.length === 0) return { ok: 'nothing' };
+  const { error: delErr } = await supabase.from('jobs').delete().in('id', ids).eq('organization_id', orgId);
+  if (delErr) return { error: delErr.message };
+  revalidatePath('/dashboard/integrations');
+  return { ok: `pruned_${ids.length}` };
+}
+
 // Wrappers for useFormState
 export async function saveCartumIntegrationAction(prev: ActionState, formData: FormData) { return saveCartumIntegration(formData); }
 export async function testCartumConnectionAction(prev: ActionState, formData: FormData) { return testCartumConnection(formData); }
 export async function queueSyncCategoriesAction(prev: ActionState, formData: FormData) { return queueSyncCategories(formData); }
 export async function queuePullProductsAction(prev: ActionState, formData: FormData) { return queuePullProducts(formData); }
+export async function deleteJobAction(prev: ActionState, formData: FormData) { return deleteJob(formData); }
+export async function pruneOldJobsAction(prev: ActionState, formData: FormData) { return pruneOldJobs(formData); }
+
+// Server-friendly wrappers
+export async function deleteJobServer(formData: FormData): Promise<void> {
+  await deleteJob(formData);
+}
+
+export async function pruneOldJobsServer(formData: FormData): Promise<void> {
+  await pruneOldJobs(formData);
+}

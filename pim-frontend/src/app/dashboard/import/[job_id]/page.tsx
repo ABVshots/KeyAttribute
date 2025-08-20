@@ -2,6 +2,8 @@
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
+import UpstreamViewer from './UpstreamViewer';
+import Collapsible from './Collapsible';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -26,6 +28,21 @@ export default async function ImportJobPage({ params }: { params: Promise<{ job_
     .select('*')
     .eq('id', job_id)
     .maybeSingle();
+
+  // Extract payload/result for summaries
+  const payload = (job?.payload as any) ?? {};
+  const summary = {
+    integration_id: payload?.integration_id ?? '-',
+    count: typeof payload?.count === 'number' ? payload.count : '-',
+    parent: typeof payload?.parent === 'number' ? payload.parent : '-',
+  };
+  const res = (job?.result as any) ?? null;
+  const counters = res ? {
+    processed: res.processed ?? 0,
+    created: res.created ?? 0,
+    updated: res.updated ?? 0,
+    skipped: res.skipped ?? 0,
+  } : null;
 
   return (
     <div className="max-w-3xl">
@@ -81,19 +98,49 @@ export default async function ImportJobPage({ params }: { params: Promise<{ job_
             )}
           </div>
 
+          {/* Parameters summary + collapsible full JSON */}
           <div className="rounded-md border bg-white p-6 shadow-sm">
             <h2 className="text-sm font-semibold text-gray-700">Параметри</h2>
-            <pre className="mt-2 overflow-auto rounded bg-gray-50 p-3 text-xs text-gray-800">{JSON.stringify(job.payload ?? {}, null, 2)}</pre>
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3 text-sm">
+              <div><p className="text-gray-500">Integration</p><p className="font-mono">{summary.integration_id}</p></div>
+              <div><p className="text-gray-500">Count</p><p>{String(summary.count)}</p></div>
+              <div><p className="text-gray-500">Parent</p><p>{String(summary.parent)}</p></div>
+            </div>
+            <div className="mt-3">
+              <Collapsible title="Показати повний payload JSON">
+                <pre className="mt-2 overflow-auto rounded bg-gray-50 p-3 text-xs text-gray-800">{JSON.stringify(payload ?? {}, null, 2)}</pre>
+              </Collapsible>
+            </div>
           </div>
 
+          {/* Full upstream JSON viewer (virtualized) */}
+          <div className="rounded-md border bg-white p-6 shadow-sm">
+            <h2 className="text-sm font-semibold text-gray-700">Повний JSON запиту (онлайн)</h2>
+            <UpstreamViewer jobId={job_id} />
+          </div>
+
+          {/* Result counters + collapsible full JSON */}
           {job.result && (
             <div className="rounded-md border bg-white p-6 shadow-sm">
               <h2 className="text-sm font-semibold text-gray-700">Результат</h2>
-              <pre className="mt-2 overflow-auto rounded bg-gray-50 p-3 text-xs text-gray-800">{JSON.stringify(job.result ?? {}, null, 2)}</pre>
+              {counters && (
+                <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                  <span className="rounded bg-gray-100 px-2 py-1">processed: {counters.processed}</span>
+                  <span className="rounded bg-green-100 px-2 py-1">created: {counters.created}</span>
+                  <span className="rounded bg-blue-100 px-2 py-1">updated: {counters.updated}</span>
+                  <span className="rounded bg-yellow-100 px-2 py-1">skipped: {counters.skipped}</span>
+                </div>
+              )}
+              <div className="mt-3">
+                <Collapsible title="Показати повний результат JSON">
+                  <pre className="mt-2 overflow-auto rounded bg-gray-50 p-3 text-xs text-gray-800">{JSON.stringify(job.result ?? {}, null, 2)}</pre>
+                </Collapsible>
+              </div>
             </div>
           )}
 
-          <div className="flex justify-end">
+          {/* Footer actions */}
+          <div className="flex justify-end gap-2">
             <Link href={`/dashboard/import/${job_id}`} className="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-gray-50">Оновити</Link>
           </div>
         </div>

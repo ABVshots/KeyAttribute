@@ -6,6 +6,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 type CartumAuthResponse = { token?: string; expires_at?: number; error?: string };
 type SyncCategoriesResponse = { success?: boolean; message?: string; queued?: number; job_id?: string; error?: string };
+type WorkerResponse = { success?: boolean; job_id?: string; error?: string };
 
 export default function SyncComponent({ integrationId }: { integrationId: string }) {
   const [loading, setLoading] = useState<string>('');
@@ -68,14 +69,32 @@ export default function SyncComponent({ integrationId }: { integrationId: string
     }
   };
 
+  const handleRunWorker = async () => {
+    setLoading('worker');
+    setMessage('Запускаємо обробник…');
+    setQueued(null);
+    setJobId(null);
+    try {
+      const res = await callFunction<WorkerResponse>('process-staged-data', {});
+      setMessage('Обробник запущено');
+      if (typeof res.job_id === 'string') setJobId(res.job_id);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setMessage(`Помилка: ${msg}`);
+    } finally {
+      setLoading('');
+    }
+  };
+
   return (
     <div className="mt-8 rounded-lg border bg-white p-6 shadow-sm">
       <h2 className="text-xl font-semibold">Синхронізація</h2>
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="flex items-center justify-between rounded-md border p-3">
           <div>
             <h3 className="font-medium">Перевірити підключення</h3>
-            <p className="text-sm text-gray-500">Перевірка авторизації до Cartum (auth token).</p>
+            <p className="text-sm text-gray-500">Перевірка авторизації до Cartum (auth token).
+            </p>
           </div>
           <button onClick={handleTestConnection} disabled={!!loading} className="rounded-lg bg-zinc-800 px-5 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-60">
             {loading === 'test' ? 'Перевірка…' : 'Перевірити'}
@@ -89,6 +108,16 @@ export default function SyncComponent({ integrationId }: { integrationId: string
           </div>
           <button onClick={handleSyncCategories} disabled={!!loading} className="rounded-lg bg-zinc-800 px-5 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-60">
             {loading === 'categories' ? 'Запуск…' : 'Запустити'}
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between rounded-md border p-3">
+          <div>
+            <h3 className="font-medium">Запустити обробник</h3>
+            <p className="text-sm text-gray-500">Обробка даних у staging та оновлення довідників.</p>
+          </div>
+          <button onClick={handleRunWorker} disabled={!!loading} className="rounded-lg bg-zinc-800 px-5 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-60">
+            {loading === 'worker' ? 'Запуск…' : 'Запустити'}
           </button>
         </div>
       </div>
