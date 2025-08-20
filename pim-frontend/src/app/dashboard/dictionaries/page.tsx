@@ -31,7 +31,7 @@ export default async function DictionariesHub() {
             <input name="label" required className="mt-1 w-full rounded border px-3 py-2" placeholder="Напр.: Характеристики" />
           </div>
           <div className="sm:col-span-1">
-            <label className="block text-sm text-gray-600">Код (необов'язково)</label>
+            <label className="block text-sm text-gray-600">Код (необов&apos;язково)</label>
             <input name="code" className="mt-1 w-full rounded border px-3 py-2" placeholder="auto з назви" />
           </div>
           <div className="sm:col-span-1 flex items-end justify-between">

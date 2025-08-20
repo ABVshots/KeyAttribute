@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const child_id = String(body?.child_id ?? '');
   const new_parent_id = String(body?.new_parent_id ?? '');
-  const context_id = String(body?.context_id ?? '');
+  // context_id reserved for revalidation context; not used here
   if (!child_id || !new_parent_id) return new Response('bad request', { status: 400 });
 
   // Reuse server action logic indirectly by calling RPC-like path here
