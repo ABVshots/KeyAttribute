@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useActionState } from 'react';
 import Link from 'next/link';
-import { updateGroupNameAction, type GroupActionState } from '../actions';
+import { updateGroupNameAction, type GroupActionState } from '../actions/update';
 import NamesModal from './names/NamesModal';
 
 type Node = { id: string; name: string };
