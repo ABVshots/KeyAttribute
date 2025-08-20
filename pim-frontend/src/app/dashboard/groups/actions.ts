@@ -386,12 +386,13 @@ export async function moveGroupParent(formData: FormData): Promise<MoveResult> {
   let cursor: string | null = new_parent_id;
   for (let i = 0; i < 64 && cursor; i++) {
     if (cursor === child_id) return { error: 'cycle' };
-    const { data: gp } = await supabase
+    const res = await supabase
       .from('groups')
       .select('parent_id')
       .eq('id', cursor)
       .maybeSingle();
-    cursor = (gp?.parent_id as string | null) ?? null;
+    const gp = (res.data as { parent_id: string | null } | null);
+    cursor = gp?.parent_id ?? null;
   }
 
   // Apply update
