@@ -53,7 +53,7 @@ export default async function DictionariesHub() {
             <div className="text-sm text-gray-500">Код: {t.code}</div>
             <div className="text-lg font-semibold">{t.label}</div>
             <div className="mt-3 flex items-center gap-2">
-              <Link href={t.code === 'cartum_category' ? '/dashboard/groups/tree' : `/dashboard/groups?type=${encodeURIComponent(t.id)}`} className="rounded border px-3 py-1 text-xs">Відкрити</Link>
+              <Link href={`/dashboard/dictionaries/groups/list?type=${encodeURIComponent(t.id)}`} className="rounded border px-3 py-1 text-xs">Відкрити</Link>
               <form action={createRootForType}>
                 <input type="hidden" name="type_id" value={t.id} />
                 <input type="hidden" name="label" value={t.label} />

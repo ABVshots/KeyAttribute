@@ -24,13 +24,13 @@ async function getGroupChain(supabase: any, id: string) {
   return chain;
 }
 
-export default async function GroupEditorPage(props: any) {
+export default async function GroupEditorPage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = createServerComponentClient({ cookies });
-  const groupId: string = String(props?.params?.id || '');
-
+  const { id: groupId } = await params;
+  
   const { data: group } = await supabase
     .from('groups')
-    .select('id, name, parent_id, organization_id')
+    .select('id, name, parent_id, organization_id, type_id')
     .eq('id', groupId)
     .maybeSingle();
 
@@ -48,11 +48,21 @@ export default async function GroupEditorPage(props: any) {
 
   const [chain, childrenRes, siblingsRes] = await Promise.all([
     getGroupChain(supabase, groupId),
-    supabase.from('groups').select('id, name').eq('parent_id', group.id as string).order('name'),
+    supabase
+      .from('group_links')
+      .select('child:groups!group_links_child_id_fkey(id, name)')
+      .eq('organization_id', (group as any).organization_id as string)
+      .eq('type_id', (group as any).type_id as string)
+      .eq('parent_id', group.id as string)
+      .order('name', { foreignTable: 'child' }),
     (group as any).parent_id ? supabase.from('groups').select('id, name').eq('parent_id', (group as any).parent_id as string).order('name') : Promise.resolve({ data: [] as any }),
   ]);
 
-  const children = (childrenRes.data ?? []) as Array<{ id: string; name: string }>;
+  let children = ((childrenRes.data ?? []) as any[]).map((r: any) => ({ id: r.child?.id as string, name: r.child?.name as string })).filter((c: any) => c.id);
+  if (!children || children.length === 0) {
+    const { data: legacy } = await supabase.from('groups').select('id, name').eq('parent_id', group.id as string).order('name');
+    children = (legacy ?? []) as Array<{ id: string; name: string }>;
+  }
   const siblings = (siblingsRes as any).data as Array<{ id: string; name: string }>;
 
   return (

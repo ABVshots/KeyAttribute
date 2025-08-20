@@ -60,7 +60,7 @@ function NodeItem({ id, name }: { id: string; name: string }) {
           />
           <button type="submit" className="rounded bg-zinc-800 px-3 py-1 text-xs text-white">Зберегти</button>
           <button type="button" onClick={() => setNamesOpen(true)} className="rounded border px-3 py-1 text-xs">Names</button>
-          <Link href={`/dashboard/groups/${id}/edit`} className="text-xs underline">Редагувати</Link>
+          <Link href={`/dashboard/dictionaries/groups/focus/${id}`} className="text-xs underline">Редагувати</Link>
         </form>
       </div>
       {state.error && <p className="mt-1 text-xs text-red-600">{state.error}</p>}

@@ -30,7 +30,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-screen">
-      <aside className="w-64 bg-zinc-800 p-6 text-white">
+      <aside className="shrink-0 bg-zinc-800 p-6 text-white transition-[width] duration-200" style={{ width: 'var(--sidebar-w, 16rem)' }}>
         <h1 className="mb-8 text-xl font-bold">PIM Dashboard</h1>
         <SidebarNav />
       </aside>

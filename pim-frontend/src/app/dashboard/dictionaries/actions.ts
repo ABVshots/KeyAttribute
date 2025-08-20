@@ -62,7 +62,7 @@ export async function createDictionary(formData: FormData) {
   }
 
   revalidatePath('/dashboard/dictionaries');
-  if (rootId) redirect(`/dashboard/groups/${rootId}/edit`);
+  if (rootId) redirect(`/dashboard/dictionaries/groups/focus/${rootId}?type=${encodeURIComponent(typeId)}`);
   redirect('/dashboard/dictionaries');
 }
 
@@ -91,6 +91,6 @@ export async function createRootForType(formData: FormData) {
     .maybeSingle();
 
   revalidatePath('/dashboard/dictionaries');
-  if (root?.id) redirect(`/dashboard/groups/${root.id}/edit`);
+  if (root?.id) redirect(`/dashboard/dictionaries/groups/focus/${root.id}?type=${encodeURIComponent(type_id)}`);
   redirect('/dashboard/dictionaries');
 }

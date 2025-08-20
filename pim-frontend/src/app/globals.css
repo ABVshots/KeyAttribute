@@ -15,6 +15,7 @@
   --accent-foreground: #ffffff;
   --hover: #f3f4f6; /* gray-100 */
   --ring: #2563eb; /* blue-600 focus ring */
+  /* --spacing: 4px; /* spacing variable for layout tuning */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -125,3 +126,15 @@ hr, .divide-y > :not([hidden]) ~ :not([hidden]) { border-color: var(--border); }
 .bg-white { background-color: var(--card) !important; }
 .text-gray-500 { color: var(--muted) !important; }
 .border { border-color: var(--border) !important; }
+
+/* Override Tailwind p-6 using CSS variable */
+.p-6 { padding: calc(var(--spacing) * 6) !important; }
+
+@keyframes ka-blink-bg {
+  0% { background-color: rgba(59,130,246,0.15); }
+  50% { background-color: rgba(59,130,246,0.35); }
+  100% { background-color: rgba(59,130,246,0.15); }
+}
+.animate-blink {
+  animation: ka-blink-bg 0.6s ease-in-out 1;
+}

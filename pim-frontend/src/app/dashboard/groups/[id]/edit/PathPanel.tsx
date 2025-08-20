@@ -19,6 +19,9 @@ export default function PathPanel({
 }) {
   const router = useRouter();
   const [overCrumb, setOverCrumb] = useState<string | null>(null);
+  const [overSibling, setOverSibling] = useState<string | null>(null);
+  const [blinkId, setBlinkId] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
 
   async function submitMove(child_id: string, new_parent_id: string) {
     const res = await fetch('/dashboard/groups/move', {
@@ -59,7 +62,31 @@ export default function PathPanel({
     const dragId = getDragId(e);
     if (!dragId || dragId === id) return;
     await submitMove(dragId, id);
+    setBlinkId(id);
     setOverCrumb(null);
+  }
+
+  function onDragStartSibling(e: React.DragEvent, id: string) {
+    setDragging(true);
+    try { e.dataTransfer.setData('text/plain', id); } catch {}
+    e.dataTransfer.effectAllowed = 'move';
+  }
+  function onDragOverSibling(e: React.DragEvent, id: string) {
+    e.preventDefault();
+    setOverSibling(id);
+  }
+  async function onDropToSibling(e: React.DragEvent, id: string) {
+    e.preventDefault();
+    const dragId = getDragId(e);
+    if (!dragId || dragId === id) return;
+    await submitMove(dragId, id);
+    setBlinkId(id);
+    setOverSibling(null);
+    setDragging(false);
+  }
+  function onDragLeaveSibling(e: React.DragEvent, id: string) {
+    if (!dragging) return;
+    setOverSibling(null);
   }
 
   return (
@@ -76,7 +103,7 @@ export default function PathPanel({
               title="Перетягніть сюди, щоб зробити це батьківським вузлом"
             >
               {i > 0 && <span className="text-gray-400">/</span>}
-              <Link href={`/dashboard/groups/${n.id}/edit`} className={n.id === groupId ? 'font-medium' : 'text-zinc-700 underline'}>
+              <Link href={`/dashboard/groups/${n.id}/edit`} className={n.id === groupId ? 'font-medium' : 'text-zinc-700'}>
                 {n.name}
               </Link>
             </li>
@@ -90,8 +117,17 @@ export default function PathPanel({
           <h3 className="text-sm font-semibold text-gray-700">На рівні</h3>
           <ul className="mt-2 space-y-1 text-sm">
             {siblings.map((s) => (
-              <li key={s.id}>
-                <Link href={`/dashboard/groups/${s.id}/edit`} className="text-zinc-700 underline">{s.name}</Link>
+              <li
+                key={s.id}
+                draggable
+                onDragStart={(e)=>onDragStartSibling(e, s.id)}
+                onDragOver={(e)=>onDragOverSibling(e, s.id)}
+                onDrop={(e)=>onDropToSibling(e, s.id)}
+                onDragLeave={(e)=>onDragLeaveSibling(e, s.id)}
+                className={`group rounded border p-1 hover:bg-gray-50 cursor-pointer ${overSibling===s.id ? 'bg-gray-50' : ''} ${blinkId===s.id ? 'animate-blink' : ''}`}
+                title="Перетягніть на елемент, щоб зробити його батьком"
+              >
+                <a href={`/dashboard/groups/${s.id}/edit`} className="block text-zinc-700 no-underline hover:no-underline">{s.name}</a>
               </li>
             ))}
           </ul>
