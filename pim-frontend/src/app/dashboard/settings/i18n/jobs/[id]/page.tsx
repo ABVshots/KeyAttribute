@@ -6,9 +6,9 @@ import RetryJobButton from '../../RetryJobButton';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function JobDetailsPage({ params }: { params: { id: string } }) {
+export default async function JobDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = createServerComponentClient({ cookies });
-  const id = params.id;
+  const { id } = await params;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return <div className="p-4 text-sm">Unauthorized</div>;
 
