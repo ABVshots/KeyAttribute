@@ -1,0 +1,80 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - heading "PIM Dashboard" [level=1] [ref=e4]
+      - generic [ref=e5]: "UI: en · v12"
+      - generic [ref=e6]:
+        - navigation "Dashboard navigation" [ref=e7]:
+          - link "Home" [ref=e9] [cursor=pointer]:
+            - /url: /dashboard
+            - img [ref=e10] [cursor=pointer]
+            - generic [ref=e13] [cursor=pointer]: Home
+          - link "Items" [ref=e15] [cursor=pointer]:
+            - /url: /dashboard/items
+            - img [ref=e16] [cursor=pointer]
+            - generic [ref=e19] [cursor=pointer]: Items
+          - link "KeyFeatures" [ref=e21] [cursor=pointer]:
+            - /url: /dashboard/dictionaries
+            - img [ref=e22] [cursor=pointer]
+            - generic [ref=e24] [cursor=pointer]: KeyFeatures
+          - link "Integrations" [ref=e26] [cursor=pointer]:
+            - /url: /dashboard/integrations
+            - img [ref=e27] [cursor=pointer]
+            - generic [ref=e30] [cursor=pointer]: Integrations
+          - link "AI Prompts" [ref=e32] [cursor=pointer]:
+            - /url: /dashboard/prompts
+            - img [ref=e33] [cursor=pointer]
+            - generic [ref=e36] [cursor=pointer]: AI Prompts
+          - link "sidebar.settings" [ref=e38] [cursor=pointer]:
+            - /url: /dashboard/settings/i18n
+            - img [ref=e39] [cursor=pointer]
+            - generic [ref=e42] [cursor=pointer]: sidebar.settings
+        - button "Налаштування меню" [ref=e45]:
+          - img [ref=e46]
+          - generic [ref=e49]: Налаштування
+    - main [ref=e50]:
+      - generic [ref=e51]:
+        - generic [ref=e52]:
+          - heading "UI Translations" [level=1] [ref=e53]
+          - generic [ref=e54]:
+            - generic [ref=e55]:
+              - generic [ref=e56]: "Platform admin:"
+              - button "OFF" [ref=e57]
+            - link "Назад" [ref=e58] [cursor=pointer]:
+              - /url: /dashboard
+        - generic [ref=e59]:
+          - generic [ref=e60]:
+            - generic [ref=e61]: Async Import Job
+            - generic [ref=e62]:
+              - generic [ref=e63]:
+                - button "Choose File" [ref=e64]
+                - combobox [ref=e65]:
+                  - option "JSON"
+                  - option "CSV" [selected]
+                - generic [ref=e66]:
+                  - radio "Org" [checked] [ref=e67]
+                  - text: Org
+                - generic [ref=e68]:
+                  - radio "Global" [ref=e69]
+                  - text: Global
+                - combobox [ref=e70]:
+                  - option "нема org" [selected]
+                - generic [ref=e71]: "Scope: org"
+                - button "Перевірити" [ref=e72]
+                - button "Start Job" [ref=e73]
+              - generic [ref=e74]:
+                - button "Завантажити шаблон JSON" [ref=e75]
+                - generic [ref=e76]: ·
+                - button "Завантажити шаблон CSV" [ref=e77]
+              - 'textbox "[{\"namespace\":\"sidebar\",\"key\":\"home\",\"locale\":\"uk\",\"value\":\"Головна\"}] або {\"sidebar\": {\"home\": {\"uk\":\"Головна\"}}} або CSV" [ref=e78]': "[ { \"namespace\": \"e2e\", \"key\": \"k1\", \"locale\": \"en\", \"value\": \"Hello {name}\" }, { \"namespace\": \"e2e\", \"key\": \"k1\", \"locale\": \"uk\", \"value\": \"Привіт {name}\" } ]"
+              - generic [ref=e79]: no_items
+          - generic [ref=e80]:
+            - generic [ref=e81]: Останні джоби імпорту
+            - generic [ref=e82]: Немає джобів
+  - button "Open Next.js Dev Tools" [ref=e88] [cursor=pointer]:
+    - img [ref=e89] [cursor=pointer]
+  - alert [ref=e92]
+```

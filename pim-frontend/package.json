@@ -6,7 +6,19 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest run -c vitest.config.ts",
+    "test:ui": "vitest -c vitest.config.ts",
+    "test:e2e": "playwright test"
+  },
+  "vitest": {
+    "test": {
+      "globals": true,
+      "environment": "node",
+      "include": [
+        "tests/unit/**/*.spec.ts"
+      ]
+    }
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.10.0",
@@ -14,7 +26,8 @@
     "next": "15.4.6",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "react-window": "^1.8.10"
+    "react-window": "^1.8.10",
+    "intl-messageformat": "^10.5.6"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -26,6 +39,8 @@
     "eslint": "^9",
     "eslint-config-next": "15.4.6",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "@playwright/test": "^1.47.2",
+    "vitest": "^2.0.5"
   }
 }

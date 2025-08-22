@@ -5,7 +5,6 @@ const nextConfig: NextConfig = {
     // Only disable during production builds on Vercel
     ignoreDuringBuilds: true,
   },
-  /* config options here */
 };
 
 export default nextConfig;

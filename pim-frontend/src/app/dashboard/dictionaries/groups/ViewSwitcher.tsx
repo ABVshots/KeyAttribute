@@ -3,11 +3,13 @@
 
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { useT } from '../../../i18n/I18nProvider';
 
 export default function ViewSwitcher({ typeId }: { typeId?: string }) {
   const sp = useSearchParams();
   const pathname = usePathname();
   const type = typeId || sp.get('type') || '';
+  const t = useT();
 
   const base = '/dashboard/dictionaries/groups';
   const listHref = `${base}/list${type ? `?type=${encodeURIComponent(type)}` : ''}`;
@@ -18,8 +20,8 @@ export default function ViewSwitcher({ typeId }: { typeId?: string }) {
 
   return (
     <div className="mb-4 flex items-center justify-end gap-2 text-sm">
-      <Link href={listHref} className={btn(!!isActive('list'))} aria-current={isActive('list') ? 'page' : undefined}>List</Link>
-      <Link href={treeHref} className={btn(!!isActive('tree'))} aria-current={isActive('tree') ? 'page' : undefined}>Tree</Link>
+      <Link href={listHref} className={btn(!!isActive('list'))} aria-current={isActive('list') ? 'page' : undefined}>{t('keyfeatures.switch.list')}</Link>
+      <Link href={treeHref} className={btn(!!isActive('tree'))} aria-current={isActive('tree') ? 'page' : undefined}>{t('keyfeatures.switch.tree')}</Link>
     </div>
   );
 }

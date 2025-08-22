@@ -1,0 +1,22 @@
+{
+  "common": {
+    "open": "Open",
+    "create": "Create",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "sidebar": {
+    "home": "Home",
+    "items": "Items",
+    "keyfeatures": "KeyFeatures",
+    "integrations": "Integrations",
+    "prompts": "AI Prompts"
+  },
+  "keyfeatures": {
+    "title": "KeyFeatures",
+    "switch": {
+      "list": "List",
+      "tree": "Tree"
+    }
+  }
+}

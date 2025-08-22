@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState, useRef } from 'react';
+import { useT } from '../i18n/I18nProvider';
 
 // Icons
 function IconHome(props: React.SVGProps<SVGSVGElement>) {
@@ -65,6 +66,7 @@ export default function SidebarNav() {
   const [mode, setMode] = useState<SidebarMode>('expanded');
   const [openSettings, setOpenSettings] = useState(false);
   const popRef = useRef<HTMLDivElement | null>(null);
+  const t = useT();
 
   useEffect(() => setMounted(true), []);
   useEffect(() => {
@@ -87,12 +89,13 @@ export default function SidebarNav() {
   }, []);
 
   const links = useMemo(() => ([
-    { href: '/dashboard', label: 'Головна', icon: IconHome, isActive: (p: string) => p === '/dashboard' },
-    { href: '/dashboard/items', label: 'Товари', icon: IconBox, isActive: (p: string) => p.startsWith('/dashboard/items') },
-    { href: '/dashboard/dictionaries', label: 'KeyFeatures', icon: IconBook, isActive: (p: string) => p.startsWith('/dashboard/dictionaries') },
-    { href: '/dashboard/integrations', label: 'Інтеграції', icon: IconPlug, isActive: (p: string) => p.startsWith('/dashboard/integrations') },
-    { href: '/dashboard/prompts', label: 'AI Промти', icon: IconSparkles, isActive: (p: string) => p.startsWith('/dashboard/prompts') },
-  ]), []);
+    { href: '/dashboard', label: t('sidebar.home'), icon: IconHome, isActive: (p: string) => p === '/dashboard' },
+    { href: '/dashboard/items', label: t('sidebar.items'), icon: IconBox, isActive: (p: string) => p.startsWith('/dashboard/items') },
+    { href: '/dashboard/dictionaries', label: t('sidebar.keyfeatures'), icon: IconBook, isActive: (p: string) => p.startsWith('/dashboard/dictionaries') },
+    { href: '/dashboard/integrations', label: t('sidebar.integrations'), icon: IconPlug, isActive: (p: string) => p.startsWith('/dashboard/integrations') },
+    { href: '/dashboard/prompts', label: t('sidebar.prompts'), icon: IconSparkles, isActive: (p: string) => p.startsWith('/dashboard/prompts') },
+    { href: '/dashboard/settings/i18n', label: t('sidebar.settings'), icon: IconGear, isActive: (p: string) => p.startsWith('/dashboard/settings/i18n') },
+  ]), [t]);
 
   const isExpanded = mode === 'expanded';
   const isCompact = mode === 'compact';

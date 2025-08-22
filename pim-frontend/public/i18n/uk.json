@@ -1,0 +1,22 @@
+{
+  "common": {
+    "open": "Відкрити",
+    "create": "Створити",
+    "edit": "Редагувати",
+    "delete": "Видалити"
+  },
+  "sidebar": {
+    "home": "Головна",
+    "items": "Товари",
+    "keyfeatures": "KeyFeatures",
+    "integrations": "Інтеграції",
+    "prompts": "AI Промти"
+  },
+  "keyfeatures": {
+    "title": "KeyFeatures",
+    "switch": {
+      "list": "Список",
+      "tree": "Дерево"
+    }
+  }
+}
