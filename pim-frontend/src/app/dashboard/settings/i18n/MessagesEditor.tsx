@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { etagFetchJson } from '@/lib/etagFetch';
 
 function extractPlaceholders(msg: string): string[] {
   const re = /\{\s*([\w.]+)\s*(?:,[^}]*)?}/g;
@@ -34,16 +35,14 @@ export default function MessagesEditor() {
   async function load() {
     setLoading(true);
     try {
-      const [curRes, baseRes] = await Promise.all([
-        fetch(`/api/i18n/messages?ns=${encodeURIComponent(ns)}&locale=${encodeURIComponent(locale)}`, { cache: 'no-store' }),
-        fetch(`/api/i18n/messages?ns=${encodeURIComponent(ns)}&locale=${encodeURIComponent(baseLocale)}`, { cache: 'no-store' })
+      const [cur, base] = await Promise.all([
+        etagFetchJson<{ items: any[] }>(`/api/i18n/messages?ns=${encodeURIComponent(ns)}&locale=${encodeURIComponent(locale)}`),
+        etagFetchJson<{ items: any[] }>(`/api/i18n/messages?ns=${encodeURIComponent(ns)}&locale=${encodeURIComponent(baseLocale)}`)
       ]);
-      const cur = curRes.ok ? await curRes.json() : { items: [] };
-      const base = baseRes.ok ? await baseRes.json() : { items: [] };
       const baseMap = new Map<string, string>();
       (base.items||[]).forEach((it: any)=> baseMap.set(it.keyId, it.value));
-      const merged = (cur.items||[]).map((it: any)=> ({ keyId: it.keyId, key: it.key, value: it.value, baseValue: baseMap.get(it.keyId) }));
-      setItems(merged);
+      const mergedItems = (cur.items||[]).map((it: any)=> ({ keyId: it.keyId, key: it.key, value: it.value, baseValue: baseMap.get(it.keyId) }));
+      setItems(mergedItems);
     } finally { setLoading(false); }
   }
   async function save(kid: string, val: string) {
@@ -71,23 +70,33 @@ export default function MessagesEditor() {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2 text-sm">
-        <select value={ns} onChange={(e)=>setNs(e.target.value)} className="rounded border px-2 py-1">
-          {namespaces.map(n => <option key={n} value={n}>{n}</option>)}
-        </select>
-        <select value={locale} onChange={(e)=>setLocale(e.target.value)} className="rounded border px-2 py-1">
-          {locales.map(l => <option key={l} value={l}>{l}</option>)}
-        </select>
-        <span className="text-xs text-gray-500">Базова локаль: {baseLocale}</span>
-        <button onClick={load} className="rounded border px-3 py-1">Оновити</button>
+      <div className="sticky top-0 z-10 -mx-4 -mt-4 bg-white/90 px-4 py-2 backdrop-blur supports-[backdrop-filter]:bg-white/70">
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <select value={ns} onChange={(e)=>setNs(e.target.value)} className="rounded border px-2 py-1">
+            {namespaces.map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+          <select value={locale} onChange={(e)=>setLocale(e.target.value)} className="rounded border px-2 py-1">
+            {locales.map(l => <option key={l} value={l}>{l}</option>)}
+          </select>
+          <span className="text-xs text-gray-500">Базова локаль: {baseLocale}</span>
+          <button onClick={load} className="rounded border px-3 py-1">Оновити</button>
+        </div>
       </div>
-      <div className="rounded border bg-white">
+
+      {/* Desktop table */}
+      <div className="rounded border bg-white hidden md:block">
         <table className="w-full text-left">
           <thead className="bg-gray-50 text-xs uppercase text-gray-500">
             <tr><th className="p-2">Key</th><th className="p-2">Value</th><th className="p-2 w-64">ICU</th></tr>
           </thead>
           <tbody>
-            {loading && <tr><td colSpan={3} className="p-2 text-gray-500">Завантаження…</td></tr>}
+            {loading && Array.from({ length: 8 }).map((_, i) => (
+              <tr key={i} className="border-t align-top">
+                <td className="p-2"><div className="h-4 w-40 animate-pulse rounded bg-gray-200" /></td>
+                <td className="p-2"><div className="h-16 w-full animate-pulse rounded bg-gray-200" /></td>
+                <td className="p-2"><div className="h-4 w-48 animate-pulse rounded bg-gray-200" /></td>
+              </tr>
+            ))}
             {!loading && items.length===0 && <tr><td colSpan={3} className="p-2 text-gray-500">Немає записів</td></tr>}
             {items.map(it => {
               const basePH = extractPlaceholders(it.baseValue||'');
@@ -118,6 +127,54 @@ export default function MessagesEditor() {
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile cards */}
+      <div className="md:hidden">
+        <ul className="divide-y rounded border bg-white">
+          {loading && Array.from({ length: 6 }).map((_, i) => (
+            <li key={i} className="p-3 space-y-2">
+              <div className="h-3 w-32 animate-pulse rounded bg-gray-200" />
+              <div className="h-16 w-full animate-pulse rounded bg-gray-200" />
+              <div className="h-3 w-48 animate-pulse rounded bg-gray-200" />
+            </li>
+          ))}
+          {!loading && items.length===0 && <li className="p-3 text-gray-500">Немає записів</li>}
+          {items.map(it => {
+            const basePH = extractPlaceholders(it.baseValue||'');
+            const curPH = extractPlaceholders(it.value||'');
+            const missing = basePH.filter(p => !curPH.includes(p));
+            const extra = curPH.filter(p => !basePH.includes(p));
+            const hasWarn = baseLocale !== locale && (missing.length>0 || extra.length>0);
+            return (
+              <li key={it.keyId} className="p-3 space-y-2">
+                <div className="font-mono text-xs">{it.key}</div>
+                <textarea defaultValue={it.value} onBlur={(e)=>save(it.keyId, e.target.value)} className={`h-20 w-full rounded border p-2 text-sm ${hasWarn ? 'border-yellow-400' : ''}`} />
+                {it.baseValue && (
+                  <div className="text-[10px] text-gray-500">Base: <span className="font-mono">{it.baseValue}</span></div>
+                )}
+                <div className="text-[10px]">
+                  <div>Base: {basePH.length ? basePH.map(p=> <span key={p} className="mr-1 rounded bg-gray-100 px-1">{`{${p}}`}</span>) : <span className="text-gray-400">—</span>}</div>
+                  <div>Cur: {curPH.length ? curPH.map(p=> <span key={p} className="mr-1 rounded bg-gray-100 px-1">{`{${p}}`}</span>) : <span className="text-gray-400">—</span>}</div>
+                  {hasWarn && (
+                    <div className="text-yellow-700">Відмінності: {missing.length>0 && <span className="mr-2">missing [{missing.join(', ')}]</span>}{extra.length>0 && <span>extra [{extra.join(', ')}]</span>}</div>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+
+      {/* Mobile sticky action bar */}
+      <div className="h-14 md:hidden" />
+      <div className="fixed inset-x-0 bottom-0 z-10 border-t bg-white px-4 py-2 md:hidden" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 8px)' }}>
+        <div className="mx-auto flex max-w-screen-sm items-center justify-between">
+          <button onClick={()=>window.scrollTo({ top: 0, behavior: 'smooth' })} className="rounded border px-3 py-1 text-sm">Вгору</button>
+          <div className="flex items-center gap-2">
+            <button onClick={()=>window.location.reload()} className="rounded border px-3 py-1 text-sm">Оновити</button>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -44,6 +44,11 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Content-visibility utilities */
+.cv-auto-400 { content-visibility: auto; contain-intrinsic-size: 400px; }
+.cv-auto-600 { content-visibility: auto; contain-intrinsic-size: 600px; }
+.cv-auto-800 { content-visibility: auto; contain-intrinsic-size: 800px; }
+
 /* Cards and containers */
 .card, .rounded, .rounded-lg, .border, .shadow-sm {
   background-color: var(--card);
@@ -137,4 +142,63 @@ hr, .divide-y > :not([hidden]) ~ :not([hidden]) { border-color: var(--border); }
 }
 .animate-blink {
   animation: ka-blink-bg 0.6s ease-in-out 1;
+}
+
+/* Help documentation styles (scoped) */
+article.help-doc {
+  color: var(--foreground);
+  /* Better text rendering */
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color-scheme: light dark;
+}
+article.help-doc :is(h1, h2, h3, h4) { line-height: 1.25; scroll-margin-top: 96px; }
+article.help-doc h1 { font-size: clamp(1.6rem, 1.2rem + 1.2vw, 2.25rem); margin-block: 1rem 1rem; }
+article.help-doc h2 { font-size: clamp(1.25rem, 1.05rem + 0.7vw, 1.6rem); margin-block: 1.25rem 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.25rem; }
+article.help-doc h3 { font-size: clamp(1.05rem, 0.95rem + 0.3vw, 1.2rem); margin-block: 1rem 0.5rem; }
+article.help-doc h4 { font-size: 1rem; margin-block: 0.75rem 0.5rem; color: var(--muted); }
+
+article.help-doc p { margin-block: 0.5rem 0.75rem; }
+article.help-doc ul, article.help-doc ol { padding-inline-start: 1.25rem; margin-block: 0.5rem 0.75rem; }
+article.help-doc li { margin-block: 0.25rem; }
+
+article.help-doc a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+article.help-doc a:hover { text-decoration-thickness: 2px; }
+
+article.help-doc code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: color-mix(in oklab, var(--border) 60%, transparent); padding: 0.1rem 0.3rem; border-radius: 0.25rem; border: 1px solid var(--border); }
+article.help-doc pre { background: var(--card); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.75rem; overflow-x: auto; box-shadow: inset 0 1px 0 rgba(0,0,0,0.02); }
+article.help-doc pre code { background: transparent; border: 0; padding: 0; }
+
+article.help-doc blockquote { border-inline-start: 3px solid var(--border); padding-inline: 0.75rem; color: var(--muted); }
+
+article.help-doc dl { margin-block: 0.5rem 0.75rem; }
+article.help-doc dt { font-weight: 600; margin-top: 0.5rem; }
+article.help-doc dd { margin-inline-start: 0.75rem; color: var(--foreground); }
+
+article.help-doc details { border: 1px solid var(--border); border-radius: 0.5rem; background: var(--card); }
+article.help-doc details + details { margin-top: 0.5rem; }
+article.help-doc summary { cursor: pointer; padding: 0.5rem 0.75rem; list-style: none; }
+article.help-doc summary::-webkit-details-marker { display: none; }
+article.help-doc summary::before { content: '\25B8'; display: inline-block; margin-right: 0.5rem; transition: transform 0.2s ease; color: var(--muted); }
+article.help-doc details[open] summary::before { transform: rotate(90deg); }
+article.help-doc details > *:not(summary) { padding: 0.5rem 0.75rem; border-top: 1px solid var(--border); }
+
+article.help-doc mark { background: color-mix(in oklab, var(--ring) 25%, transparent); color: inherit; padding: 0.05rem 0.2rem; border-radius: 0.2rem; }
+article.help-doc kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 0.85em; padding: 0.1rem 0.35rem; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 0.35rem; background: var(--card); }
+
+article.help-doc nav[aria-label="Зміст"] { border: 1px solid var(--border); border-radius: 0.5rem; background: var(--card); padding: 0.75rem; }
+article.help-doc nav[aria-label="Зміст"] ol { margin: 0; }
+
+/* Anchor targets visibility and offset */
+article.help-doc :target { outline: 2px dashed var(--ring); outline-offset: 2px; }
+
+@media (min-width: 768px) {
+  article.help-doc { max-width: 75ch; }
+}
+
+@media print {
+  article.help-doc { color: #000; }
+  article.help-doc a { text-decoration: none; }
+  article.help-doc nav[aria-label="Зміст"] { break-inside: avoid; }
 }

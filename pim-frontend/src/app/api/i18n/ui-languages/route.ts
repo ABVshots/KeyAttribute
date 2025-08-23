@@ -5,8 +5,12 @@ import { cookies } from 'next/headers';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+async function getSupabase() {
+  return createRouteHandlerClient({ cookies });
+}
+
 export async function GET() {
-  const supabase = createRouteHandlerClient({ cookies });
+  const supabase = await getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return new Response('Unauthorized', { status: 401 });
   const { data: org } = await supabase
@@ -25,7 +29,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = createRouteHandlerClient({ cookies });
+  const supabase = await getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return new Response('Unauthorized', { status: 401 });
   const { locale } = await req.json();
@@ -44,7 +48,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const supabase = createRouteHandlerClient({ cookies });
+  const supabase = await getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return new Response('Unauthorized', { status: 401 });
   const { locale } = await req.json();
@@ -65,7 +69,7 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const supabase = createRouteHandlerClient({ cookies });
+  const supabase = await getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return new Response('Unauthorized', { status: 401 });
   const { searchParams } = new URL(req.url);

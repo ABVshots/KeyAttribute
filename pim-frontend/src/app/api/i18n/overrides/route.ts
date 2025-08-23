@@ -52,6 +52,20 @@ export async function GET(req: NextRequest) {
   const locale = searchParams.get('locale') || '';
   if (!ns || !locale) return new Response(JSON.stringify({ items: [] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 
+  // ETag based on org catalog version
+  const { data: ver } = await supabase
+    .from('i18n_catalog_versions')
+    .select('version')
+    .eq('scope', 'org')
+    .eq('org_id', orgId)
+    .maybeSingle();
+  const version = ver?.version ?? 0;
+  const etag = `W/"org:${orgId}-v${version}-ns:${ns}-loc:${locale}"`;
+  const inm = req.headers.get('if-none-match') || req.headers.get('If-None-Match');
+  if (inm && inm === etag) {
+    return new Response(null, { status: 304, headers: { ETag: etag } });
+  }
+
   const { data: keys } = await supabase.from('ui_keys').select('id, key').eq('namespace', ns).order('key');
   const ids = (keys ?? []).map((k: any) => k.id as string);
   let values: any[] = [];
@@ -62,7 +76,7 @@ export async function GET(req: NextRequest) {
   const valMap = new Map<string, string>();
   values.forEach((v: any) => valMap.set(v.key_id as string, v.value as string));
   const items = (keys ?? []).map((k: any) => ({ keyId: k.id as string, key: k.key as string, value: valMap.get(k.id as string) ?? '' }));
-  return new Response(JSON.stringify({ items }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  return new Response(JSON.stringify({ items }), { status: 200, headers: { 'Content-Type': 'application/json', ETag: etag } });
 }
 
 export async function POST(req: NextRequest) {

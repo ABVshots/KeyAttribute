@@ -13,6 +13,7 @@ export async function HEAD(req: NextRequest) {
   const format = (searchParams.get('format') || 'json').toLowerCase();
   const includeOverridesParam = (searchParams.get('includeOverrides') || '').toLowerCase();
   const includeOverrides = includeOverridesParam === '1' || includeOverridesParam === 'true';
+  const overridesOnly = ((searchParams.get('overridesOnly') || '').toLowerCase() === '1' || (searchParams.get('overridesOnly') || '').toLowerCase() === 'true');
   if (!ns) return new Response(null, { status: 400 });
 
   const { data: ver } = await supabase
@@ -24,7 +25,7 @@ export async function HEAD(req: NextRequest) {
   let version = String(ver?.version ?? 1);
 
   let orgId: string | null = null; let orgVersion: string | null = null;
-  if (includeOverrides) {
+  if (includeOverrides || overridesOnly) {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const { data: org } = await supabase
@@ -46,7 +47,7 @@ export async function HEAD(req: NextRequest) {
       }
     }
   }
-  const etag = `i18n:${ns}:${locale || 'all'}:${format}:v${version}${includeOverrides && orgId ? `:ovr:${orgId}:v${orgVersion}` : ''}`;
+  const etag = `i18n:${ns}:${locale || 'all'}:${format}:v${version}${(includeOverrides || overridesOnly) && orgId ? `:ovr:${orgId}:v${orgVersion}${overridesOnly?':onlyovr':''}` : ''}`;
   return new Response(null, { status: 200, headers: { 'ETag': etag, 'Cache-Control': 'public, max-age=60, stale-while-revalidate=600' } });
 }
 
@@ -58,9 +59,9 @@ export async function GET(req: NextRequest) {
   const format = (searchParams.get('format') || 'json').toLowerCase();
   const includeOverridesParam = (searchParams.get('includeOverrides') || '').toLowerCase();
   const includeOverrides = includeOverridesParam === '1' || includeOverridesParam === 'true';
+  const overridesOnly = ((searchParams.get('overridesOnly') || '').toLowerCase() === '1' || (searchParams.get('overridesOnly') || '').toLowerCase() === 'true');
   if (!ns) return new Response('bad', { status: 400 });
 
-  // Global catalog version for caching
   const { data: ver } = await supabase
     .from('i18n_catalog_versions')
     .select('version')
@@ -69,9 +70,8 @@ export async function GET(req: NextRequest) {
     .maybeSingle();
   let version = String(ver?.version ?? 1);
 
-  // Resolve org for overrides (first org membership)
   let orgId: string | null = null; let orgVersion: string | null = null;
-  if (includeOverrides) {
+  if (includeOverrides || overridesOnly) {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const { data: org } = await supabase
@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const etag = `i18n:${ns}:${locale || 'all'}:${format}:v${version}${includeOverrides && orgId ? `:ovr:${orgId}:v${orgVersion}` : ''}`;
+  const etag = `i18n:${ns}:${locale || 'all'}:${format}:v${version}${(includeOverrides || overridesOnly) && orgId ? `:ovr:${orgId}:v${orgVersion}${overridesOnly?':onlyovr':''}` : ''}`;
   const ifNone = req.headers.get('if-none-match');
   if (ifNone && ifNone === etag) {
     return new Response(null, { status: 304 });
@@ -106,7 +106,7 @@ export async function GET(req: NextRequest) {
 
   // Preload overrides map if requested
   const overrideMap = new Map<string, Map<string, string>>(); // key_id -> (locale -> value)
-  if (includeOverrides && orgId && ids.length) {
+  if ((includeOverrides || overridesOnly) && orgId && ids.length) {
     if (locale) {
       const { data: ovr } = await supabase
         .from('ui_messages_overrides')
@@ -139,93 +139,124 @@ export async function GET(req: NextRequest) {
   };
 
   if (format === 'csv') {
-    // CSV export
     if (locale) {
-      // key,value
+      // CSV, one locale
       const rows: Array<[string, string]> = [];
       if (ids.length) {
-        const { data } = await supabase.from('ui_messages_global').select('key_id, value').in('key_id', ids).eq('locale', locale);
-        const map = new Map<string, string>();
-        (data ?? []).forEach((r: any) => { map.set(r.key_id as string, r.value as string); });
-        for (const kid of ids) {
-          const kname = keyMap.get(kid);
-          if (!kname) continue;
-          const ov = overrideMap.get(kid)?.get(locale);
-          const base = map.get(kid) || '';
-          const val = (ov ?? base) || '';
-          rows.push([kname, val]);
+        if (overridesOnly) {
+          overrideMap.forEach((locMap, kid) => {
+            const kname = keyMap.get(kid); if (!kname) return;
+            const ov = locMap.get(locale);
+            if (ov !== undefined) rows.push([kname, ov]);
+          });
+        } else {
+          const { data } = await supabase.from('ui_messages_global').select('key_id, value').in('key_id', ids).eq('locale', locale);
+          const map = new Map<string, string>();
+          (data ?? []).forEach((r: any) => { map.set(r.key_id as string, r.value as string); });
+          for (const kid of ids) {
+            const kname = keyMap.get(kid);
+            if (!kname) continue;
+            const ov = overrideMap.get(kid)?.get(locale);
+            const base = map.get(kid) || '';
+            const val = (ov ?? base) || '';
+            rows.push([kname, val]);
+          }
         }
       }
       const header = ['key', locale];
       const csv = [header, ...rows].map(cols => cols.map(cell => '"' + String(cell).replace(/"/g, '""') + '"').join(',')).join('\n');
-      return new Response(csv, { status: 200, headers: { ...commonHeaders, 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="i18n-${ns}-${locale}${includeOverrides && orgId ? '-overrides' : ''}.csv"` } });
+      return new Response(csv, { status: 200, headers: { ...commonHeaders, 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="i18n-${ns}-${locale}${overridesOnly?'-overrides-only':(includeOverrides && orgId ? '-overrides' : '')}.csv"` } });
     } else {
-      // key,loc1,loc2,... per-locale
-      const { data } = ids.length ? await supabase.from('ui_messages_global').select('key_id, locale, value').in('key_id', ids) : { data: [] as any[] } as any;
-      const locales = Array.from(new Set((data ?? []).map((r: any) => String(r.locale)))).sort() as string[];
+      // CSV, all locales
       const map: Record<string, Record<string, string>> = {};
-      (data ?? []).forEach((r: any) => {
-        const kid = r.key_id as string; const k = keyMap.get(kid); if (!k) return;
-        const loc = r.locale as string; const val = r.value as string;
-        if (!map[k]) map[k] = {};
-        map[k][loc] = val;
-      });
-      // apply overrides on top
-      if (includeOverrides && orgId) {
-        overrideMap.forEach((locMap, kid) => {
-          const k = keyMap.get(kid); if (!k) return;
-          if (!map[k]) map[k] = {};
-          locMap.forEach((val, loc) => { map[k][loc] = val; });
-        });
+      let localesSet = new Set<string>();
+      if (ids.length) {
+        if (overridesOnly) {
+          overrideMap.forEach((locMap, kid) => {
+            const k = keyMap.get(kid); if (!k) return;
+            if (!map[k]) map[k] = {};
+            locMap.forEach((val, loc) => { map[k][loc] = val; localesSet.add(loc); });
+          });
+        } else {
+          const { data } = await supabase.from('ui_messages_global').select('key_id, locale, value').in('key_id', ids);
+          (data ?? []).forEach((r: any) => {
+            const k = keyMap.get(r.key_id as string); if (!k) return;
+            const loc = r.locale as string; const val = r.value as string;
+            if (!map[k]) map[k] = {};
+            map[k][loc] = val; localesSet.add(loc);
+          });
+          if (includeOverrides && orgId) {
+            overrideMap.forEach((locMap, kid) => {
+              const k = keyMap.get(kid); if (!k) return;
+              if (!map[k]) map[k] = {};
+              locMap.forEach((val, loc) => { map[k][loc] = val; localesSet.add(loc); });
+            });
+          }
+        }
       }
+      const locales = Array.from(localesSet).sort();
       const header = ['key', ...locales];
       const rows = (keys ?? []).map((k: any) => {
         const kk = String(k.key);
         return [kk, ...locales.map((l: string) => (map[kk]?.[l] ?? ''))];
       });
       const csv = [header, ...rows].map(cols => cols.map(cell => '"' + String(cell).replace(/"/g, '""') + '"').join(',')).join('\n');
-      return new Response(csv, { status: 200, headers: { ...commonHeaders, 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="i18n-${ns}-all${includeOverrides && orgId ? '-overrides' : ''}.csv"` } });
+      return new Response(csv, { status: 200, headers: { ...commonHeaders, 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="i18n-${ns}-all${overridesOnly?'-overrides-only':(includeOverrides && orgId ? '-overrides' : '')}.csv"` } });
     }
   }
 
   if (locale) {
-    // JSON flat map for one locale
     const map: Record<string, string> = {};
     if (ids.length) {
-      const { data } = await supabase.from('ui_messages_global').select('key_id, value').in('key_id', ids).eq('locale', locale);
-      (data ?? []).forEach((r: any) => { const k = keyMap.get(r.key_id as string); if (k) map[k] = r.value as string; });
+      if (overridesOnly) {
+        overrideMap.forEach((locMap, kid) => {
+          const k = keyMap.get(kid); if (!k) return;
+          const ov = locMap.get(locale);
+          if (ov !== undefined) map[k] = ov;
+        });
+      } else {
+        const { data } = await supabase.from('ui_messages_global').select('key_id, value').in('key_id', ids).eq('locale', locale);
+        (data ?? []).forEach((r: any) => { const k = keyMap.get(r.key_id as string); if (k) map[k] = r.value as string; });
+        if (includeOverrides && orgId) {
+          overrideMap.forEach((locMap, kid) => {
+            const k = keyMap.get(kid); if (!k) return;
+            const ov = locMap.get(locale);
+            if (ov !== undefined) map[k] = ov;
+          });
+        }
+      }
     }
-    // apply overrides
-    if (includeOverrides && orgId) {
-      overrideMap.forEach((locMap, kid) => {
-        const k = keyMap.get(kid); if (!k) return;
-        const ov = locMap.get(locale);
-        if (ov !== undefined) map[k] = ov;
-      });
-    }
-    return new Response(JSON.stringify({ namespace: ns, locale, messages: map }), { status: 200, headers: { ...commonHeaders, 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ namespace: ns, locale, messages: map, overridesOnly: !!overridesOnly }), { status: 200, headers: { ...commonHeaders, 'Content-Type': 'application/json' } });
   }
 
-  // JSON per-locale object
   const out: Record<string, Record<string, string>> = {};
   if (ids.length) {
-    const { data } = await supabase.from('ui_messages_global').select('key_id, locale, value').in('key_id', ids);
-    (data ?? []).forEach((r: any) => {
-      const k = keyMap.get(r.key_id as string); if (!k) return;
-      const loc = r.locale as string; const val = r.value as string;
-      if (!out[loc]) out[loc] = {};
-      out[loc][k] = val;
-    });
-  }
-  // apply overrides
-  if (includeOverrides && orgId) {
-    overrideMap.forEach((locMap, kid) => {
-      const k = keyMap.get(kid); if (!k) return;
-      locMap.forEach((val, loc) => {
+    if (overridesOnly) {
+      overrideMap.forEach((locMap, kid) => {
+        const k = keyMap.get(kid); if (!k) return;
+        locMap.forEach((val, loc) => {
+          if (!out[loc]) out[loc] = {};
+          out[loc][k] = val;
+        });
+      });
+    } else {
+      const { data } = await supabase.from('ui_messages_global').select('key_id, locale, value').in('key_id', ids);
+      (data ?? []).forEach((r: any) => {
+        const k = keyMap.get(r.key_id as string); if (!k) return;
+        const loc = r.locale as string; const val = r.value as string;
         if (!out[loc]) out[loc] = {};
         out[loc][k] = val;
       });
-    });
+      if (includeOverrides && orgId) {
+        overrideMap.forEach((locMap, kid) => {
+          const k = keyMap.get(kid); if (!k) return;
+          locMap.forEach((val, loc) => {
+            if (!out[loc]) out[loc] = {};
+            out[loc][k] = val;
+          });
+        });
+      }
+    }
   }
-  return new Response(JSON.stringify({ namespace: ns, messages: out, includeOverrides: !!(includeOverrides && orgId) }), { status: 200, headers: { ...commonHeaders, 'Content-Type': 'application/json' } });
+  return new Response(JSON.stringify({ namespace: ns, messages: out, overridesOnly: !!overridesOnly, includeOverrides: !!(includeOverrides && orgId) }), { status: 200, headers: { ...commonHeaders, 'Content-Type': 'application/json' } });
 }

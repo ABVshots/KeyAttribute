@@ -21,6 +21,21 @@ export async function GET(req: NextRequest) {
   const ns = searchParams.get('ns') || '';
   const locale = searchParams.get('locale') || '';
   if (!ns || !locale) return new Response(JSON.stringify({ items: [] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+
+  // ETag based on global catalog version
+  const { data: ver } = await supabase
+    .from('i18n_catalog_versions')
+    .select('version')
+    .eq('scope', 'global')
+    .is('org_id', null)
+    .maybeSingle();
+  const version = ver?.version ?? 0;
+  const etag = `W/"global-v${version}-ns:${ns}-loc:${locale}"`;
+  const inm = req.headers.get('if-none-match') || req.headers.get('If-None-Match');
+  if (inm && inm === etag) {
+    return new Response(null, { status: 304, headers: { ETag: etag } });
+  }
+
   const { data: keys } = await supabase.from('ui_keys').select('id, key').eq('namespace', ns).order('key');
   const ids = (keys ?? []).map((k: any) => k.id as string);
   let values: any[] = [];
@@ -31,7 +46,7 @@ export async function GET(req: NextRequest) {
   const valMap = new Map<string, string>();
   values.forEach((v: any) => valMap.set(v.key_id as string, v.value as string));
   const items = (keys ?? []).map((k: any) => ({ keyId: k.id as string, key: k.key as string, value: valMap.get(k.id as string) ?? '' }));
-  return new Response(JSON.stringify({ items }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  return new Response(JSON.stringify({ items }), { status: 200, headers: { 'Content-Type': 'application/json', ETag: etag } });
 }
 
 export async function POST(req: NextRequest) {
@@ -65,13 +80,13 @@ export async function POST(req: NextRequest) {
   const { error } = await supabase.from('ui_messages_global').upsert({ key_id: keyId, locale, value }, { onConflict: 'key_id,locale' });
   if (error) return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: { 'Content-Type': 'application/json' } });
   // bump global version
-  const { data: ver } = await supabase
+  const { data: ver2 } = await supabase
     .from('i18n_catalog_versions')
     .select('id, version')
     .eq('scope', 'global')
     .is('org_id', null)
     .maybeSingle();
-  if (ver?.id) await supabase.from('i18n_catalog_versions').update({ version: (ver.version as number) + 1, updated_at: new Date().toISOString() }).eq('id', ver.id as number);
+  if (ver2?.id) await supabase.from('i18n_catalog_versions').update({ version: (ver2.version as number) + 1, updated_at: new Date().toISOString() }).eq('id', ver2.id as number);
   else await supabase.from('i18n_catalog_versions').insert({ scope: 'global', org_id: null, version: 1 });
   return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 }

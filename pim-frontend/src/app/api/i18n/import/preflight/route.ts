@@ -111,7 +111,8 @@ function extractPlaceholders(msg: string): Set<string> {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = createRouteHandlerClient({ cookies });
+  const cookieStore = await cookies();
+  const supabase = createRouteHandlerClient({ cookies: () => Promise.resolve(cookieStore) });
   const body = await req.json().catch(()=>({}));
   const format = (String(body.format||'json').toLowerCase() as 'json'|'csv');
   const payload = String(body.payload||'');

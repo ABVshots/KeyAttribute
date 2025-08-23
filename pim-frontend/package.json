@@ -9,7 +9,10 @@
     "lint": "next lint",
     "test": "vitest run -c vitest.config.ts",
     "test:ui": "vitest -c vitest.config.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "i18n:extract": "node scripts/i18n-extract.mjs",
+    "i18n:sync": "node scripts/i18n-sync.mjs",
+    "prepare": "husky install"
   },
   "vitest": {
     "test": {
@@ -41,6 +44,11 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "@playwright/test": "^1.47.2",
-    "vitest": "^2.0.5"
+    "vitest": "^2.0.5",
+    "husky": "^9",
+    "@babel/parser": "^7.25.0",
+    "@babel/traverse": "^7.25.0",
+    "fast-glob": "^3.3.2",
+    "dotenv": "^16.4.5"
   }
 }

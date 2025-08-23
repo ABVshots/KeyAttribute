@@ -5,8 +5,13 @@ import { cookies } from 'next/headers';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+async function getSupabase() {
+  const cookieStore = await cookies();
+  return createRouteHandlerClient({ cookies: () => Promise.resolve(cookieStore) });
+}
+
 export async function GET(_req: NextRequest) {
-  const supabase = createRouteHandlerClient({ cookies });
+  const supabase = await getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return new Response('Unauthorized', { status: 401 });
 

@@ -45,7 +45,7 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
         <h1 className="text-xl font-semibold">Import Job: <span className="font-mono">{id}</span></h1>
         <div className="flex items-center gap-2">
           <RetryJobButton id={id} disabled={!canRetry} />
-          <Link href="/dashboard/settings/i18n" className="rounded border px-3 py-1 text-sm">Назад</Link>
+          <Link href="/dashboard/settings/i18n/jobs" className="rounded border px-3 py-1 text-sm">Назад</Link>
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { etagFetchJson } from '@/lib/etagFetch';
 
 export function LanguagesManager() {
   const [items, setItems] = useState<string[]>([]);
@@ -10,8 +11,10 @@ export function LanguagesManager() {
   useEffect(() => { void load(); }, []);
 
   async function load() {
-    const res = await fetch('/api/i18n/ui-languages', { cache: 'no-store' });
-    if (res.ok) { const d = await res.json(); setItems(d.locales || []); setDef(d.def || null); }
+    const d = await etagFetchJson<{ locales: string[]; def: string | null }>(
+      '/api/i18n/ui-languages', { cache: 'no-cache' }
+    );
+    setItems(d.locales || []); setDef(d.def || null);
   }
 
   async function add() {

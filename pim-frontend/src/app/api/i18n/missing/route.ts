@@ -5,8 +5,12 @@ import { cookies } from 'next/headers';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+async function getSupabase() {
+  return createRouteHandlerClient({ cookies });
+}
+
 export async function POST(req: NextRequest) {
-  const supabase = createRouteHandlerClient({ cookies });
+  const supabase = await getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   const body = await req.json();
   const namespace = String(body.namespace || '').trim();
@@ -25,13 +29,13 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  const supabase = createRouteHandlerClient({ cookies });
+  const supabase = await getSupabase();
   const { data } = await supabase.from('i18n_missing_runtime').select('id, namespace, key, locale, count, last_seen, path').order('last_seen', { ascending: false }).limit(500);
   return new Response(JSON.stringify({ items: data ?? [] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 }
 
 export async function DELETE(req: NextRequest) {
-  const supabase = createRouteHandlerClient({ cookies });
+  const supabase = await getSupabase();
   const { searchParams } = new URL(req.url);
   const id = Number(searchParams.get('id') || '0');
   if (id) await supabase.from('i18n_missing_runtime').delete().eq('id', id);

@@ -23,6 +23,19 @@ export default function ImportJobBox() {
   const [orgs, setOrgs] = useState<Org[]>([]);
   const [orgId, setOrgId] = useState<string>('');
   const [toast, setToast] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/i18n/admins', { cache: 'no-store' });
+        if (res.ok) {
+          const j = await res.json();
+          setIsAdmin(!!j.isAdmin);
+        }
+      } catch {}
+    })();
+  }, []);
 
   useEffect(() => {
     async function loadOrgs() {
@@ -36,6 +49,11 @@ export default function ImportJobBox() {
     }
     if (scope === 'org') loadOrgs();
   }, [scope]);
+
+  useEffect(() => {
+    // Enforce org-only for non-admins
+    if (!isAdmin && scope !== 'org') setScope('org');
+  }, [isAdmin, scope]);
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -83,6 +101,10 @@ export default function ImportJobBox() {
     setError(null);
     setJobId(null);
     try {
+      if (!isAdmin && scope === 'global') {
+        setError('Потрібні права platform_admin для Global');
+        return;
+      }
       if (scope === 'org' && (!orgId || orgs.length === 0)) {
         setError('Ви не в організації або не обрано org');
         return;
@@ -120,8 +142,8 @@ export default function ImportJobBox() {
         <label className="flex items-center gap-1 text-xs">
           <input type="radio" name="scope" value="org" checked={scope==='org'} onChange={()=>setScope('org')} /> Org
         </label>
-        <label className="flex items-center gap-1 text-xs">
-          <input type="radio" name="scope" value="global" checked={scope==='global'} onChange={()=>setScope('global')} /> Global
+        <label className={`flex items-center gap-1 text-xs ${!isAdmin ? 'opacity-50' : ''}`}>
+          <input type="radio" name="scope" value="global" checked={scope==='global'} onChange={()=>setScope('global')} disabled={!isAdmin} /> Global
         </label>
         {scope==='org' && (
           <select value={orgId} onChange={(e)=>setOrgId(e.target.value)} className="rounded border px-2 py-1 text-xs">
@@ -130,7 +152,7 @@ export default function ImportJobBox() {
             ) : orgs.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
           </select>
         )}
-        <span className="rounded bg-gray-100 px-2 py-0.5 text-[10px] text-gray-600">Scope: {scope}{scope==='org' && orgId ? ` · orgId:${orgId.slice(0,6)}…` : ''}</span>
+        <span className="rounded bg-gray-100 px-2 py-0.5 text-[10px] text-gray-600">Scope: {isAdmin ? scope : 'org'}</span>
         <button onClick={runPreflight} disabled={!text || checking} className="rounded border px-3 py-1">{checking ? 'Перевірка…' : 'Перевірити'}</button>
         <button onClick={startJob} disabled={!canStart} className="rounded bg-zinc-800 px-3 py-1 text-white disabled:opacity-50">Start Job</button>
       </div>

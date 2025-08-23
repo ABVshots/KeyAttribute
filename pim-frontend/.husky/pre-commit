@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+npm run i18n:extract || exit 1
+
+git add public/i18n/en.json
+
+npm run lint || exit 1

@@ -121,3 +121,80 @@ Always follow these rules when modifying or adding code. Changes that break thes
 - APIs must return JSON `{ error: code }` for non-2xx; UIs must map known codes to user-friendly messages.
 
 By following this checklist, future features (incl. PIM core) should integrate without breaking i18n and job system contracts.
+
+# I18n Settings (Dashboard)
+
+Path: `/dashboard/settings/i18n`
+
+Purpose
+- Central hub for UI translations: user UI language, import/export, keys/messages, org overrides, missing report, audit.
+
+Access & Roles
+- Platform admin: full global access (keys/messages, global import/export).
+- Org member: org-only actions (UI languages, overrides, org-only export, org import).
+
+Tabs
+- Languages: user locale; org UI languages (default locale, list).
+- Import/Export: export namespace to JSON/CSV (admin: global [+includeOverrides], non-admin: overridesOnly=1); async import with preflight/logs.
+- Keys (admin): manage namespaces/keys; virtualization for large sets.
+- Messages (admin): edit global messages with ICU validation; blur to save.
+- Overrides (org): edit org overrides; blur to save; mobile sticky bar.
+- Missing: report and bulk actions.
+- Audit: change log with cursor pagination.
+
+Import (Async)
+- Formats: JSON array, nested JSON, CSV long (namespace,key,locale,value).
+- Flow: preflight (size/locales/ICU), create job (scope org/global), monitor (status/progress/logs), retry/cancel/force.
+- Limits: payload ≤ 1MB, active jobs/user throttling, rate limits, MAX_ITEMS.
+
+Export API
+- `/api/i18n/export?ns=...&locale?=&format=json|csv&includeOverrides=1|0&overridesOnly=1|0`.
+- Admin: global; may include org overrides.
+- Non-admin: org overrides only (overridesOnly=1 automatically in UI).
+- Caching: HEAD/GET with ETag; 304 supported.
+
+Performance & UX
+- Cursor pagination + virtualization on large lists; sticky toolbars; skeleton rows.
+- content-visibility on heavy panels; light SWR via ETag (etagFetchJson).
+- Mobile: cards and sticky action bar; Theme (light/dark) without flash.
+
+Security
+- Global writes (keys/messages) for platform_admin only.
+- Org overrides and UI languages for org members.
+- ICU validation; enabled locales only; bump catalog versions on writes.
+
+## I18n Compliance Pipeline (ICP)
+
+Goal: enforce i18n rules automatically and keep catalogs in sync during development.
+
+Name: I18n Compliance Pipeline (ICP)
+
+Principles:
+- No hardcoded UI strings. Always use `t('ns.key', params?, { default: 'Dev text' })`.
+- Namespace per module/route, stable keys, base locale `en` with ICU.
+- Automate checks so violations fail locally/CI.
+
+Process (Dev → CI → UI):
+1) Authoring in code
+   - Wrap all texts in `t()` with `default`.
+   - Choose namespace by module (e.g., `dashboard.i18n`), stable keys (`title`, `import.start`).
+2) Extraction (local/pre-commit)
+   - `npm run i18n:extract` scans code for `t(...)` and merges keys + defaults into `public/i18n/en.json`.
+   - Add a pre-commit hook (Husky) to run extract and block commits with hardcoded strings.
+3) Sync to DB (local/CI)
+   - `npm run i18n:sync` reads `public/i18n/en.json` and upserts `ui_keys` and `ui_messages_global (en)`, bumps catalog version.
+   - CI job runs extract + sync + missing check; fails the build if violations exist.
+4) Runtime safety
+   - Missing keys are logged to `Missing`; resolve via the UI action “Create from missing”.
+5) Review & Translate
+   - Use Import/Export tab to export per namespace/locale (admins: global; non-admins: org overrides only) and import back.
+6) UI entrypoint
+   - Go to `/dashboard/settings/i18n/help#compliance` for a guided admin checklist.
+
+Admin checklist (quick):
+- Enforce ESLint rule (no-literal-strings) and Husky pre-commit.
+- Ensure CI runs `i18n:extract` + `i18n:sync` + missing checks.
+- After merges, verify Import/Export and Missing are clean; review Audit.
+
+Notes:
+- Scripts and hooks can be implemented incrementally; until then, use the Help tab instructions to run the process manually.

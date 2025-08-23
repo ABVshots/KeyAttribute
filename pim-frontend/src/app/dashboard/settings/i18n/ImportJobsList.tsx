@@ -23,7 +23,7 @@ async function JobLogs({ jobId }: { jobId: string }) {
   );
 }
 
-export default async function ImportJobsList({ page = 1, pageSize = 10, searchParams = {} as Record<string, any> }: { page?: number; pageSize?: number; searchParams?: Record<string, any> }) {
+export default async function ImportJobsList({ pageSize = 10, searchParams = {} as Record<string, any> }: { pageSize?: number; searchParams?: Record<string, any> }) {
   const supabase = createServerComponentClient({ cookies });
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
@@ -32,14 +32,13 @@ export default async function ImportJobsList({ page = 1, pageSize = 10, searchPa
   const scope = (searchParams.jobScope || '').trim();
   const q = (searchParams.q || '').trim();
   const days = Math.max(0, Number(searchParams.days || '0') || 0); // 0 = no filter
-
-  const from = (page - 1) * pageSize;
-  const to = from + pageSize - 1;
+  const cursor = (searchParams.jobsCursor || '').trim(); // ISO date string
 
   let query = supabase
     .from('i18n_import_jobs')
-    .select('id, status, scope, org_id, created_at, finished_at, stats, progress, total', { count: 'exact' })
-    .eq('requested_by', user.id);
+    .select('id, status, scope, org_id, created_at, finished_at, stats, progress, total')
+    .eq('requested_by', user.id)
+    .order('created_at', { ascending: false });
   if (status) query = query.eq('status', status);
   if (scope) query = query.eq('scope', scope);
   if (q) query = query.like('id', `%${q}%`);
@@ -47,10 +46,14 @@ export default async function ImportJobsList({ page = 1, pageSize = 10, searchPa
     const sinceIso = new Date(Date.now() - days*24*60*60*1000).toISOString();
     query = query.gte('created_at', sinceIso);
   }
-  const { data: jobs, count } = await query.order('created_at', { ascending: false }).range(from, to);
+  if (cursor) query = query.lt('created_at', cursor);
 
-  const total = count || 0;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const { data: jobsRaw } = await query.limit(pageSize + 1);
+  const jobs = (jobsRaw || []);
+  const hasMore = jobs.length > pageSize;
+  const items = hasMore ? jobs.slice(0, pageSize) : jobs;
+  const nextCursor = hasMore ? String(items[items.length - 1].created_at) : '';
+
   const now = Date.now();
 
   function canRetry(j: any) {
@@ -66,63 +69,68 @@ export default async function ImportJobsList({ page = 1, pageSize = 10, searchPa
     return false;
   }
 
-  function urlFor(p: number) {
+  function urlWithCursor(cur?: string) {
     const params = new URLSearchParams();
     const sp = (searchParams || {}) as Record<string, any>;
     for (const [k, v] of Object.entries(sp)) {
+      if (k === 'jobsPage' || k === 'jobsPageSize') continue; // drop legacy paging
+      if (k === 'jobsCursor') continue; // we'll set below
       if (v == null) continue;
       if (typeof v === 'string') params.set(k, v);
       else if (Array.isArray(v)) {
         const first = v.find((x) => typeof x === 'string');
         if (first) params.set(k, first as string);
-      } // skip non-string values (e.g., Symbols)
+      }
     }
-    params.set('jobsPage', String(p));
     params.set('jobsPageSize', String(pageSize));
-    return `/dashboard/settings/i18n?${params.toString()}`;
+    if (cur) params.set('jobsCursor', cur);
+    return `/dashboard/settings/i18n/jobs?${params.toString()}`;
   }
 
   return (
     <div className="flex flex-col gap-2">
-      <form method="get" action="/dashboard/settings/i18n" className="flex flex-wrap items-end gap-2 text-xs">
-        <input type="hidden" name="jobsPage" value="1" />
-        <input type="hidden" name="jobsPageSize" value={String(pageSize)} />
-        <div className="flex flex-col">
-          <label className="mb-1">Status</label>
-          <select name="jobStatus" defaultValue={status} className="rounded border px-2 py-1">
-            <option value="">All</option>
-            <option value="queued">queued</option>
-            <option value="running">running</option>
-            <option value="done">done</option>
-            <option value="failed">failed</option>
-          </select>
-        </div>
-        <div className="flex flex-col">
-          <label className="mb-1">Scope</label>
-          <select name="jobScope" defaultValue={scope} className="rounded border px-2 py-1">
-            <option value="">All</option>
-            <option value="global">global</option>
-            <option value="org">org</option>
-          </select>
-        </div>
-        <div className="flex flex-col">
-          <label className="mb-1">Search (ID)</label>
-          <input name="q" defaultValue={q} placeholder="uuid…" className="w-48 rounded border px-2 py-1" />
-        </div>
-        <div className="flex flex-col">
-          <label className="mb-1">Days</label>
-          <input name="days" type="number" min={0} max={365} defaultValue={days || ''} placeholder="0" className="w-20 rounded border px-2 py-1" />
-        </div>
-        <button className="rounded border px-3 py-1">Apply</button>
-        <Link href="/dashboard/settings/i18n" className="rounded border px-3 py-1">Clear</Link>
-      </form>
+      <div className="sticky top-0 z-10 -mx-3 -mt-3 bg-white/90 px-3 py-2 backdrop-blur supports-[backdrop-filter]:bg-white/70">
+        <form method="get" action="/dashboard/settings/i18n/jobs" className="flex flex-wrap items-end gap-2 text-xs">
+          {/* Reset cursor on filter apply */}
+          <input type="hidden" name="jobsCursor" value="" />
+          <input type="hidden" name="jobsPageSize" value={String(pageSize)} />
+          <div className="flex flex-col">
+            <label className="mb-1">Status</label>
+            <select name="jobStatus" defaultValue={status} className="rounded border px-2 py-1">
+              <option value="">All</option>
+              <option value="queued">queued</option>
+              <option value="running">running</option>
+              <option value="done">done</option>
+              <option value="failed">failed</option>
+            </select>
+          </div>
+          <div className="flex flex-col">
+            <label className="mb-1">Scope</label>
+            <select name="jobScope" defaultValue={scope} className="rounded border px-2 py-1">
+              <option value="">All</option>
+              <option value="global">global</option>
+              <option value="org">org</option>
+            </select>
+          </div>
+          <div className="flex flex-col">
+            <label className="mb-1">Search (ID)</label>
+            <input name="q" defaultValue={q} placeholder="uuid…" className="w-48 rounded border px-2 py-1" />
+          </div>
+          <div className="flex flex-col">
+            <label className="mb-1">Days</label>
+            <input name="days" type="number" min={0} max={365} defaultValue={days || ''} placeholder="0" className="w-20 rounded border px-2 py-1" />
+          </div>
+          <button className="rounded border px-3 py-1">Apply</button>
+          <Link href="/dashboard/settings/i18n/jobs" className="rounded border px-3 py-1">Clear</Link>
+        </form>
+      </div>
 
       <div className="max-h-96 overflow-auto pr-1">
         <div className="space-y-2">
-          {(jobs||[]).length === 0 ? (
+          {(items||[]).length === 0 ? (
             <div className="text-sm text-gray-500">Немає джобів</div>
           ) : (
-            jobs!.map((j: any) => (
+            items!.map((j: any) => (
               <div key={j.id} className="rounded border p-2">
                 <div className="mb-1 flex items-center justify-between text-xs text-gray-500">
                   <div className="flex items-center gap-2">
@@ -144,11 +152,12 @@ export default async function ImportJobsList({ page = 1, pageSize = 10, searchPa
           )}
         </div>
       </div>
+
       <div className="mt-1 flex items-center justify-between text-xs text-gray-600">
-        <div>Сторінка {page} з {totalPages} · Всього {total}</div>
+        <div>{cursor ? `Показано новіші за ${new Date(cursor).toLocaleString()}` : 'Показано найновіші'}</div>
         <div className="flex items-center gap-2">
-          <Link href={urlFor(Math.max(1, page - 1))} className={`rounded border px-2 py-1 ${page<=1 ? 'pointer-events-none opacity-50' : ''}`}>Назад</Link>
-          <Link href={urlFor(Math.min(totalPages, page + 1))} className={`rounded border px-2 py-1 ${page>=totalPages ? 'pointer-events-none opacity-50' : ''}`}>Далі</Link>
+          <Link href={urlWithCursor()} className={`rounded border px-2 py-1 ${cursor ? '' : 'pointer-events-none opacity-50'}`}>Reset</Link>
+          <Link href={urlWithCursor(nextCursor)} className={`rounded border px-2 py-1 ${hasMore ? '' : 'pointer-events-none opacity-50'}`}>Load older</Link>
         </div>
       </div>
     </div>
