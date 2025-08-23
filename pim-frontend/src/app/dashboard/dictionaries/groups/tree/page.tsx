@@ -8,13 +8,14 @@ import { redirect } from 'next/navigation';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+function tS(k: string, _p?: Record<string, any>, o?: { fallback?: string }) { return o?.fallback || k; }
+
 export default async function DictTreePage({ searchParams }: { searchParams?: Promise<Record<string, string>> }) {
   const supabase = createServerComponentClient({ cookies });
   const sp = (await searchParams) || {};
   let typeId = sp.type || '';
 
   if (!typeId) {
-    // choose first available type as default
     const { data: types } = await supabase.from('group_types').select('id').order('label').limit(1);
     if (types && types[0]?.id) {
       redirect(`/dashboard/dictionaries/groups/tree?type=${encodeURIComponent(types[0].id as string)}`);
@@ -25,18 +26,16 @@ export default async function DictTreePage({ searchParams }: { searchParams?: Pr
     return (
       <div>
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Tree</h1>
-          <Link href="/dashboard/dictionaries" className="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-gray-50">До довідників</Link>
+          <h1 className="text-2xl font-bold">{tS('dictionaries.tree.title', undefined, { fallback: 'Tree' })}</h1>
+          <Link href="/dashboard/dictionaries" className="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-gray-50">{tS('dictionaries.back', undefined, { fallback: 'До довідників' })}</Link>
         </div>
-        <p className="text-gray-500">Не вказано type.</p>
+        <p className="text-gray-500">{tS('dictionaries.tree.noType', undefined, { fallback: 'Не вказано type.' })}</p>
       </div>
     );
   }
 
-  // Load type label
   const { data: type } = await supabase.from('group_types').select('id, label').eq('id', typeId).maybeSingle();
 
-  // Find roots for this type: prefer group_links parents that never appear as child; fallback to legacy parent_id null
   const { data: allOfType } = await supabase.from('groups').select('id').eq('type_id', typeId);
   const typeIds = (allOfType ?? []).map((g: any) => g.id as string);
 
@@ -63,11 +62,11 @@ export default async function DictTreePage({ searchParams }: { searchParams?: Pr
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{type?.label ? `Tree — ${type.label}` : 'Tree'}</h1>
-        <Link href="/dashboard/dictionaries" className="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-gray-50">До довідників</Link>
+        <h1 className="text-2xl font-bold">{type?.label ? `${tS('dictionaries.tree.title', undefined, { fallback: 'Tree' })} — ${type.label}` : tS('dictionaries.tree.title', undefined, { fallback: 'Tree' })}</h1>
+        <Link href="/dashboard/dictionaries" className="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-gray-50">{tS('dictionaries.back', undefined, { fallback: 'До довідників' })}</Link>
       </div>
       {roots.length === 0 ? (
-        <p className="text-gray-500">Кореневих елементів не знайдено.</p>
+        <p className="text-gray-500">{tS('dictionaries.tree.noRoots', undefined, { fallback: 'Кореневих елементів не знайдено.' })}</p>
       ) : (
         <TreeClient roots={roots} />
       )}

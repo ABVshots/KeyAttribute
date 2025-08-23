@@ -6,6 +6,8 @@ import Link from 'next/link';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+function tS(k: string, _p?: Record<string, any>, o?: { fallback?: string }) { return o?.fallback || k; }
+
 export default async function ItemsPage() {
   const supabase = createServerComponentClient({ cookies });
   const { data: items, error } = await supabase
@@ -19,38 +21,37 @@ export default async function ItemsPage() {
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Керування Товарами</h1>
-        {/* Посилання на створення нового товару */}
+        <h1 className="text-3xl font-bold">{tS('items.title', undefined, { fallback: 'Керування Товарами' })}</h1>
         <Link
           href="/dashboard/items/new"
           className="rounded-lg bg-zinc-800 px-5 py-2 text-sm font-medium text-white hover:bg-zinc-700"
         >
-          + Додати товар
+          {tS('items.new', undefined, { fallback: '+ Додати товар' })}
         </Link>
       </div>
 
       <div className="rounded-lg border bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full table-auto">
-            <caption className="sr-only">Список товарів</caption>
+            <caption className="sr-only">{tS('items.table.caption', undefined, { fallback: 'Список товарів' })}</caption>
             <thead className="border-b bg-gray-50 text-left text-sm font-medium text-gray-500">
               <tr>
-                <th scope="col" className="px-6 py-3">Назва</th>
-                <th scope="col" className="px-6 py-3">SKU</th>
+                <th scope="col" className="px-6 py-3">{tS('items.table.name', undefined, { fallback: 'Назва' })}</th>
+                <th scope="col" className="px-6 py-3">{tS('items.table.sku', undefined, { fallback: 'SKU' })}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {error && (
                 <tr>
                   <td colSpan={2} className="px-6 py-4 text-sm text-red-600">
-                    Помилка завантаження: {error.message}
+                    {tS('items.table.loadError', { msg: error.message }, { fallback: `Помилка завантаження: ${error.message}` })}
                   </td>
                 </tr>
               )}
               {!error && typedItems && typedItems.length === 0 && (
                 <tr>
                   <td colSpan={2} className="px-6 py-4 text-gray-500">
-                    У вас ще немає жодного товару.
+                    {tS('items.table.empty', undefined, { fallback: 'У вас ще немає жодного товару.' })}
                   </td>
                 </tr>
               )}

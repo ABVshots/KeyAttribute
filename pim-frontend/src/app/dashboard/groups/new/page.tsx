@@ -8,6 +8,8 @@ import SubmitButton from '../../items/new/SubmitButton';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+function tS(k: string, _p?: Record<string, any>, o?: { fallback?: string }) { return o?.fallback || k; }
+
 export default async function NewGroupPage({
   searchParams,
 }: {
@@ -34,11 +36,11 @@ export default async function NewGroupPage({
 
   return (
     <div>
-      <h1 className="text-3xl font-bold">Нова група</h1>
+      <h1 className="text-3xl font-bold">{tS('groups.new.title', undefined, { fallback: 'Нова група' })}</h1>
 
       {(qpError || gtError || pgError) && (
         <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          {qpMessage || 'Сталася помилка завантаження даних. Спробуйте ще раз.'}
+          {qpMessage || tS('groups.new.loadError', undefined, { fallback: 'Сталася помилка завантаження даних. Спробуйте ще раз.' })}
         </div>
       )}
 
@@ -48,7 +50,7 @@ export default async function NewGroupPage({
       >
         <div className="space-y-6">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">Назва групи</label>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700">{tS('groups.new.nameLabel', undefined, { fallback: 'Назва групи' })}</label>
             <input
               id="name"
               name="name"
@@ -57,13 +59,13 @@ export default async function NewGroupPage({
               autoComplete="off"
               spellCheck={false}
               pattern=".{1,120}"
-              title="Від 1 до 120 символів"
+              title={tS('groups.new.nameTitle', undefined, { fallback: 'Від 1 до 120 символів' })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-zinc-500 focus:ring-zinc-500"
             />
           </div>
 
           <div>
-            <label htmlFor="type_id" className="block text-sm font-medium text-gray-700">Тип групи</label>
+            <label htmlFor="type_id" className="block text-sm font-medium text-gray-700">{tS('groups.new.typeLabel', undefined, { fallback: 'Тип групи' })}</label>
             <select
               id="type_id"
               name="type_id"
@@ -71,7 +73,7 @@ export default async function NewGroupPage({
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-zinc-500 focus:ring-zinc-500"
               defaultValue=""
             >
-              <option value="" disabled>Оберіть тип...</option>
+              <option value="" disabled>{tS('groups.new.typePlaceholder', undefined, { fallback: 'Оберіть тип...' })}</option>
               {groupTypes?.map((type) => (
                 <option key={type.id} value={type.id}>{type.label}</option>
               ))}
@@ -79,14 +81,14 @@ export default async function NewGroupPage({
           </div>
 
           <div>
-            <label htmlFor="parent_id" className="block text-sm font-medium text-gray-700">Батьківська група (опціонально)</label>
+            <label htmlFor="parent_id" className="block text-sm font-medium text-gray-700">{tS('groups.new.parentLabel', undefined, { fallback: 'Батьківська група (опціонально)' })}</label>
             <select
               id="parent_id"
               name="parent_id"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-zinc-500 focus:ring-зinc-500"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-zinc-500 focus:ring-zinc-500"
               defaultValue=""
             >
-              <option value="">Немає</option>
+              <option value="">{tS('groups.new.parentNone', undefined, { fallback: 'Немає' })}</option>
               {parentGroups?.map((group) => (
                 <option key={group.id} value={group.id}>{group.name}</option>
               ))}
@@ -95,7 +97,7 @@ export default async function NewGroupPage({
         </div>
 
         <div className="mt-8 flex justify-end space-x-4">
-          <Link href="/dashboard/groups" className="rounded-lg border bg-white px-5 py-2 text-sm">Скасувати</Link>
+          <Link href="/dashboard/groups" className="rounded-lg border bg-white px-5 py-2 text-sm">{tS('common.cancel', undefined, { fallback: 'Скасувати' })}</Link>
           <SubmitButton />
         </div>
       </form>

@@ -202,3 +202,6 @@ article.help-doc :target { outline: 2px dashed var(--ring); outline-offset: 2px;
   article.help-doc a { text-decoration: none; }
   article.help-doc nav[aria-label="Зміст"] { break-inside: avoid; }
 }
+.mb-2 {
+    margin-bottom: calc(var(--spacing) * 6);
+}

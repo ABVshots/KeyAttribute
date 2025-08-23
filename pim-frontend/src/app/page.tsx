@@ -1,6 +1,30 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import Image from "next/image";
 
 export default function Home() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const run = async () => {
+      // If magic-link dropped us on the root with #access_token, forward to /auth/callback preserving hash
+      if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
+        window.location.replace('/auth/callback' + window.location.hash);
+        return;
+      }
+      // If already logged in, go to dashboard
+      const supabase = createClientComponentClient();
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        router.replace('/dashboard');
+      }
+    };
+    run();
+  }, [router]);
+
   return (
     <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">

@@ -22,13 +22,15 @@ function setNested(obj, ns, key, val) {
   obj[ns] ||= {}; if (obj[ns][key] == null || obj[ns][key] === '') obj[ns][key] = val;
 }
 
-function collectFromFile(file, map) {
+function collectFromFile(file, acc) {
   const code = fs.readFileSync(file, 'utf8');
   const ast = parse(code, { sourceType: 'module', plugins: ['typescript', 'jsx'] });
   traverse(ast, {
     CallExpression(pathNode) {
       const callee = pathNode.node.callee;
-      if (callee.type !== 'Identifier' || callee.name !== 't') return;
+      if (callee.type !== 'Identifier') return;
+      const name = callee.name;
+      if (name !== 't' && name !== 'tS' && name !== 'tServer') return;
       const args = pathNode.node.arguments;
       if (!args.length) return;
       const a0 = args[0];
@@ -37,18 +39,38 @@ function collectFromFile(file, map) {
       const [ns, ...rest] = full.split('.');
       const key = rest.join('.') || '';
       if (!ns || !key) return;
-      // Find default in 2nd or 3rd arg: { default: '...' }
+      // default text detection: in later args as string literal or object default/fallback
       let def = '';
-      const candidates = args.slice(1).filter(a => a.type === 'ObjectExpression');
-      for (const obj of candidates) {
-        for (const prop of obj.properties) {
-          if (prop.type === 'ObjectProperty' && prop.key.type === 'Identifier' && prop.key.name === 'default') {
-            if (prop.value.type === 'StringLiteral') def = prop.value.value;
+      for (const a of args.slice(1)) {
+        if (a.type === 'StringLiteral' && !def) def = a.value;
+        if (a.type === 'ObjectExpression') {
+          for (const prop of a.properties) {
+            if (prop.type === 'ObjectProperty' && prop.key.type === 'Identifier') {
+              if ((prop.key.name === 'default' || prop.key.name === 'fallback') && prop.value.type === 'StringLiteral' && !def) {
+                def = prop.value.value;
+              }
+            }
           }
         }
       }
-      if (!def) def = '';
-      map.push({ ns, key, def });
+      acc.push({ ns, key, def });
+    },
+    JSXOpeningElement(pathNode) {
+      const el = pathNode.node;
+      if (el.name.type === 'JSXIdentifier' && el.name.name === 'ExtractorOnly') {
+        let k = '', fallback = '';
+        for (const attr of el.attributes) {
+          if (attr.type !== 'JSXAttribute' || !attr.name) continue;
+          const name = attr.name.name;
+          if (name === 'k' && attr.value && attr.value.type === 'StringLiteral') k = attr.value.value;
+          if (name === 'fallback' && attr.value && attr.value.type === 'StringLiteral') fallback = attr.value.value;
+        }
+        if (k && k.includes('.')) {
+          const [ns, ...rest] = k.split('.');
+          const key = rest.join('.') || '';
+          acc.push({ ns, key, def: fallback || '' });
+        }
+      }
     }
   });
 }
@@ -61,7 +83,7 @@ function collectFromFile(file, map) {
   }
   const current = readJsonSafe(EN_FILE);
   for (const { ns, key, def } of found) {
-    setNested(current, ns, key, def);
+    setNested(current, ns, key, def || '');
   }
   writeJsonPretty(EN_FILE, current);
   console.log(`i18n:extract → ${EN_FILE} updated with ${found.length} entries (merged).`);

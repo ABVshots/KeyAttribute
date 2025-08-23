@@ -1,0 +1,722 @@
+{
+  "common": {
+    "open": {
+      "en-US": "Open",
+      "uk-UA": "Відкрити"
+    },
+    "create": {
+      "en-US": "Create",
+      "uk-UA": "Створити"
+    },
+    "edit": {
+      "en-US": "Edit",
+      "uk-UA": "Редагувати"
+    },
+    "delete": {
+      "en-US": "Delete",
+      "uk-UA": "Видалити"
+    },
+    "deselectAll": {
+      "en-US": "Deselect all",
+      "uk-UA": "Зняти всі"
+    },
+    "selectAll": {
+      "en-US": "Select all",
+      "uk-UA": "Вибрати всі"
+    },
+    "selectedCount": {
+      "en-US": "Selected: {n}",
+      "uk-UA": "Вибрано: {n}"
+    },
+    "exportJson": {
+      "en-US": "Export JSON",
+      "uk-UA": "Експорт JSON"
+    },
+    "import": {
+      "en-US": "Import",
+      "uk-UA": "Імпорт"
+    },
+    "name": {
+      "en-US": "Name",
+      "uk-UA": "Назва"
+    },
+    "children": {
+      "en-US": "Children",
+      "uk-UA": "Діти"
+    },
+    "createdAt": {
+      "en-US": "Created",
+      "uk-UA": "Створено"
+    },
+    "focus": {
+      "en-US": "Focus",
+      "uk-UA": "Фокус"
+    },
+    "nothingFound": {
+      "en-US": "Nothing found",
+      "uk-UA": "Нічого не знайдено"
+    },
+    "search": {
+      "en-US": "Search...",
+      "uk-UA": "Пошук..."
+    },
+    "searching": {
+      "en-US": "Searching…",
+      "uk-UA": "Пошук…"
+    },
+    "find": {
+      "en-US": "Find",
+      "uk-UA": "Знайти"
+    },
+    "cancel": {
+      "en-US": "Cancel",
+      "uk-UA": "Скасувати"
+    },
+    "applying": {
+      "en-US": "Applying…",
+      "uk-UA": "Застосування…"
+    },
+    "apply": {
+      "en-US": "Apply",
+      "uk-UA": "Застосувати"
+    },
+    "error": {
+      "en-US": "Error:",
+      "uk-UA": "Помилка:"
+    },
+    "result": {
+      "en-US": "Result:",
+      "uk-UA": "Результат:"
+    },
+    "close": {
+      "en-US": "Close",
+      "uk-UA": "Закрити"
+    },
+    "preview": {
+      "en-US": "Preview",
+      "uk-UA": "Попередній перегляд"
+    },
+    "importing": {
+      "en-US": "Importing…",
+      "uk-UA": "Імпорт…"
+    },
+    "saving": {
+      "en-US": "Saving...",
+      "uk-UA": "Збереження..."
+    },
+    "save": {
+      "en-US": "Save",
+      "uk-UA": "Зберегти"
+    },
+    "asc": {
+      "en-US": "ASC",
+      "uk-UA": "ASC"
+    },
+    "desc": {
+      "en-US": "DESC",
+      "uk-UA": "DESC"
+    },
+    "perPage": {
+      "en-US": "{n}/page",
+      "uk-UA": "{n}/стор."
+    },
+    "filter": {
+      "en-US": "Filter",
+      "uk-UA": "Фільтрувати"
+    },
+    "total": {
+      "en-US": "Total: {total}",
+      "uk-UA": "Всього: {total}"
+    },
+    "prev": {
+      "en-US": "Prev",
+      "uk-UA": "Назад"
+    },
+    "pageX": {
+      "en-US": "Page {page}",
+      "uk-UA": "Сторінка {page}"
+    },
+    "next": {
+      "en-US": "Next",
+      "uk-UA": "Далі"
+    }
+  },
+  "sidebar": {
+    "home": {
+      "en-US": "Home",
+      "uk-UA": "Головна"
+    },
+    "items": {
+      "en-US": "Items",
+      "uk-UA": "Товари"
+    },
+    "keyfeatures": {
+      "en-US": "KeyFeatures",
+      "uk-UA": "KeyFeatures"
+    },
+    "integrations": {
+      "en-US": "Integrations",
+      "uk-UA": "Інтеграції"
+    },
+    "prompts": {
+      "en-US": "AI Prompts",
+      "uk-UA": "AI Промпти"
+    },
+    "settings": {
+      "en-US": "Settings",
+      "uk-UA": "Налаштування"
+    }
+  },
+  "keyfeatures": {
+    "title": {
+      "en-US": "KeyFeatures",
+      "uk-UA": "KeyFeatures"
+    },
+    "switch.list": {
+      "en-US": "List",
+      "uk-UA": "Список"
+    },
+    "switch.tree": {
+      "en-US": "Tree",
+      "uk-UA": "Дерево"
+    }
+  },
+  "ns": {
+    "key": {
+      "en-US": "Key",
+      "uk-UA": "Ключ"
+    }
+  },
+  "settings": {
+    "languages.addUiLanguage": {
+      "en-US": "Add UI language",
+      "uk-UA": "Додати мову інтерфейсу"
+    },
+    "languages.default": {
+      "en-US": "Default",
+      "uk-UA": "За замовчуванням"
+    },
+    "languages.makeDefault": {
+      "en-US": "Make default",
+      "uk-UA": "Зробити замовчуваною"
+    },
+    "languages.delete": {
+      "en-US": "Delete",
+      "uk-UA": "Видалити"
+    },
+    "languages.empty": {
+      "en-US": "No languages yet",
+      "uk-UA": "Мов ще немає"
+    },
+    "import.preflight.fail": {
+      "en-US": "Preflight check failed",
+      "uk-UA": "Попередня перевірка не пройдена"
+    },
+    "import.nothing": {
+      "en-US": "Nothing to import",
+      "uk-UA": "Нічого імпортувати"
+    },
+    "import.err.adminGlobal": {
+      "en-US": "Only platform admins can import global translations",
+      "uk-UA": "Лише платформні адміни можуть імпортувати глобальні переклади"
+    },
+    "import.err.noRights": {
+      "en-US": "You don't have rights to import translations",
+      "uk-UA": "У вас немає прав на імпорт перекладів"
+    },
+    "import.err.noOrg": {
+      "en-US": "No organization selected",
+      "uk-UA": "Організацію не вибрано"
+    },
+    "import.err.tooMany": {
+      "en-US": "Too many requests",
+      "uk-UA": "Забагато запитів"
+    },
+    "import.err.rateLimited": {
+      "en-US": "Rate limited",
+      "uk-UA": "Обмежено за швидкістю"
+    },
+    "import.err.payloadLarge": {
+      "en-US": "Payload too large",
+      "uk-UA": "Занадто великий payload"
+    },
+    "import.err.tooManyItems": {
+      "en-US": "Too many items",
+      "uk-UA": "Занадто багато елементів"
+    },
+    "import.err.invalidLocale": {
+      "en-US": "Invalid locale(s)",
+      "uk-UA": "Некоректна локаль(і)"
+    },
+    "import.err.badRequest": {
+      "en-US": "Bad request",
+      "uk-UA": "Некоректний запит"
+    },
+    "import.noOrg": {
+      "en-US": "Organization is required",
+      "uk-UA": "Потрібна організація"
+    },
+    "import.scope": {
+      "en-US": "Scope",
+      "uk-UA": "Область"
+    },
+    "import.checking": {
+      "en-US": "Checking…",
+      "uk-UA": "Перевірка…"
+    },
+    "import.check": {
+      "en-US": "Check",
+      "uk-UA": "Перевірити"
+    },
+    "import.start": {
+      "en-US": "Start import",
+      "uk-UA": "Почати імпорт"
+    },
+    "import.downloadJson": {
+      "en-US": "Download JSON template",
+      "uk-UA": "Завантажити шаблон JSON"
+    },
+    "import.downloadCsv": {
+      "en-US": "Download CSV template",
+      "uk-UA": "Завантажити шаблон CSV"
+    },
+    "import.placeholder": {
+      "en-US": "Paste JSON, CSV, or lines here",
+      "uk-UA": "Вставте JSON, CSV або рядки сюди"
+    },
+    "import.summary": {
+      "en-US": "Summary",
+      "uk-UA": "Підсумок"
+    },
+    "import.invalidLocales": {
+      "en-US": "Invalid locales",
+      "uk-UA": "Некоректні локалі"
+    },
+    "import.samples": {
+      "en-US": "Samples",
+      "uk-UA": "Приклади"
+    },
+    "import.missing": {
+      "en-US": "Missing in catalog",
+      "uk-UA": "Відсутні в каталозі"
+    },
+    "import.extra": {
+      "en-US": "Extra keys",
+      "uk-UA": "Зайві ключі"
+    },
+    "tabs.languages": {
+      "en-US": "Languages",
+      "uk-UA": "Мови"
+    },
+    "tabs.importExport": {
+      "en-US": "Import/Export",
+      "uk-UA": "Імпорт/Експорт"
+    },
+    "tabs.keys": {
+      "en-US": "Keys",
+      "uk-UA": "Ключі"
+    },
+    "tabs.messages": {
+      "en-US": "Messages",
+      "uk-UA": "Повідомлення"
+    },
+    "tabs.overrides": {
+      "en-US": "Overrides",
+      "uk-UA": "Перевизначення"
+    },
+    "tabs.missing": {
+      "en-US": "Missing",
+      "uk-UA": "Відсутні"
+    },
+    "tabs.audit": {
+      "en-US": "Audit",
+      "uk-UA": "Аудит"
+    },
+    "tabs.help": {
+      "en-US": "Help",
+      "uk-UA": "Допомога"
+    },
+    "tabs.theme": {
+      "en-US": "Theme",
+      "uk-UA": "Тема"
+    },
+    "tabs.light": {
+      "en-US": "Light",
+      "uk-UA": "Світла"
+    },
+    "tabs.dark": {
+      "en-US": "Dark",
+      "uk-UA": "Темна"
+    },
+    "languages.save": {
+      "en-US": "Save",
+      "uk-UA": "Зберегти"
+    }
+  },
+  "integrations": {
+    "common.wait": {
+      "en-US": "Please wait…",
+      "uk-UA": "Будь ласка, зачекайте…"
+    },
+    "common.error": {
+      "en-US": "Error",
+      "uk-UA": "Помилка"
+    },
+    "common.success": {
+      "en-US": "Success",
+      "uk-UA": "Успішно"
+    },
+    "common.job": {
+      "en-US": "Job",
+      "uk-UA": "Завдання"
+    },
+    "form.domain": {
+      "en-US": "Domain",
+      "uk-UA": "Домен"
+    },
+    "form.domain.ph": {
+      "en-US": "api.example.com",
+      "uk-UA": "api.example.com"
+    },
+    "form.domain.example": {
+      "en-US": "Example: api.example.com",
+      "uk-UA": "Приклад: api.example.com"
+    },
+    "form.secret": {
+      "en-US": "Secret token",
+      "uk-UA": "Секретний токен"
+    },
+    "form.secret.ph": {
+      "en-US": "Enter secret…",
+      "uk-UA": "Введіть секрет…"
+    },
+    "form.secret.help": {
+      "en-US": "Used to authenticate outgoing requests",
+      "uk-UA": "Використовується для автентифікації вихідних запитів"
+    },
+    "quick.title": {
+      "en-US": "Quick actions",
+      "uk-UA": "Швидкі дії"
+    },
+    "quick.outbox": {
+      "en-US": "Open outbox",
+      "uk-UA": "Відкрити вихідні"
+    },
+    "saving": {
+      "en-US": "Saving…",
+      "uk-UA": "Збереження…"
+    },
+    "saveSettings": {
+      "en-US": "Save settings",
+      "uk-UA": "Зберегти налаштування"
+    },
+    "sync.notAuth": {
+      "en-US": "Not authenticated",
+      "uk-UA": "Не автентифіковано"
+    },
+    "sync.noBaseUrl": {
+      "en-US": "Base URL not set",
+      "uk-UA": "Базовий URL не задано"
+    },
+    "sync.upstreamError": {
+      "en-US": "Upstream error",
+      "uk-UA": "Помилка на стороні сервісу"
+    },
+    "sync.startingCategories": {
+      "en-US": "Starting categories sync…",
+      "uk-UA": "Запуск синхронізації категорій…"
+    },
+    "sync.categoriesQueued": {
+      "en-US": "Categories queued",
+      "uk-UA": "Категорії поставлено в чергу"
+    },
+    "sync.error": {
+      "en-US": "Sync error",
+      "uk-UA": "Помилка синхронізації"
+    },
+    "sync.testing": {
+      "en-US": "Testing…",
+      "uk-UA": "Тестування…"
+    },
+    "sync.tokenValid": {
+      "en-US": "Token valid",
+      "uk-UA": "Токен дійсний"
+    },
+    "sync.testOk": {
+      "en-US": "Test OK",
+      "uk-UA": "Тест успішний"
+    },
+    "sync.startWorker": {
+      "en-US": "Starting worker…",
+      "uk-UA": "Запуск воркера…"
+    },
+    "sync.workerOk": {
+      "en-US": "Worker started",
+      "uk-UA": "Воркера запущено"
+    },
+    "sync.title": {
+      "en-US": "Sync",
+      "uk-UA": "Синхронізація"
+    },
+    "sync.testTitle": {
+      "en-US": "Test connection",
+      "uk-UA": "Тест з’єднання"
+    },
+    "sync.testDesc": {
+      "en-US": "Run a test request to validate configuration.",
+      "uk-UA": "Виконайте тестовий запит для перевірки конфігурації."
+    },
+    "common.running": {
+      "en-US": "Running…",
+      "uk-UA": "Виконується…"
+    },
+    "sync.testAction": {
+      "en-US": "Run test",
+      "uk-UA": "Запустити тест"
+    },
+    "sync.categoriesTitle": {
+      "en-US": "Categories",
+      "uk-UA": "Категорії"
+    },
+    "sync.categoriesDesc": {
+      "en-US": "Queue synchronization of categories.",
+      "uk-UA": "Поставити в чергу синхронізацію категорій."
+    },
+    "sync.categoriesAction": {
+      "en-US": "Queue categories",
+      "uk-UA": "Додати категорії в чергу"
+    },
+    "sync.workerTitle": {
+      "en-US": "Worker",
+      "uk-UA": "Воркер"
+    },
+    "sync.workerDesc": {
+      "en-US": "Start background worker processing.",
+      "uk-UA": "Запустити фонову обробку."
+    },
+    "sync.workerAction": {
+      "en-US": "Start worker",
+      "uk-UA": "Запустити воркер"
+    },
+    "sync.queued": {
+      "en-US": "Queued",
+      "uk-UA": "Поставлено в чергу"
+    },
+    "sync.jobLabel": {
+      "en-US": "Job:",
+      "uk-UA": "Завдання:"
+    },
+    "sync.openJob": {
+      "en-US": "Open job",
+      "uk-UA": "Відкрити завдання"
+    }
+  },
+  "groups": {
+    "linkToParent": {
+      "en-US": "Link to parent",
+      "uk-UA": "Лінкувати до батька"
+    },
+    "cover": {
+      "en-US": "Cover",
+      "uk-UA": "Обкладинка"
+    },
+    "selectParent.title": {
+      "en-US": "Select parent node",
+      "uk-UA": "Обрати батьківський вузол"
+    },
+    "import.title": {
+      "en-US": "Import items (JSON/CSV/lines)",
+      "uk-UA": "Імпорт елементів (JSON/CSV/рядки)"
+    },
+    "import.parentLabel": {
+      "en-US": "Parent node (to link after import)",
+      "uk-UA": "Батьківський вузол (для лінкування після імпорту)"
+    },
+    "import.pasteData": {
+      "en-US": "Paste data to import",
+      "uk-UA": "Вставте дані для імпорту"
+    },
+    "import.placeholder": {
+      "en-US": "E.g.: [ { \"names\": { \"en\": \"Name\" } } ] or CSV with columns name,name_uk",
+      "uk-UA": "Напр.: [ { \"names\": { \"en\": \"Name\" } } ] або CSV з колонками name,name_uk"
+    },
+    "import.support": {
+      "en-US": "Supported: JSON array, JSON with items[], CSV (name, name_[locale]), or lines (one per line). Dry‑run with md5 matching is available.",
+      "uk-UA": "Підтримка: JSON масив, JSON з items[], CSV (name, name_[locale]) або рядки (по одному на рядок). Доступний dry‑run з MD5‑звіркою."
+    },
+    "import.sections.create": {
+      "en-US": "Create",
+      "uk-UA": "Створення"
+    },
+    "import.sections.linkById": {
+      "en-US": "Link by id",
+      "uk-UA": "Лінк за id"
+    },
+    "import.sections.linkByMd5": {
+      "en-US": "Link by md5",
+      "uk-UA": "Лінк за md5"
+    },
+    "import.sections.updateTranslations": {
+      "en-US": "Update translations",
+      "uk-UA": "Оновлення перекладів"
+    },
+    "delete.confirm": {
+      "en-US": "Delete this node? Action cannot be undone.",
+      "uk-UA": "Видалити цей вузол? Дію не можна скасувати."
+    },
+    "delete.removeChildrenFirst": {
+      "en-US": "Remove or move child nodes first",
+      "uk-UA": "Спочатку видаліть або перемістіть дочірні вузли"
+    },
+    "delete.title": {
+      "en-US": "Delete node",
+      "uk-UA": "Видалити вузол"
+    }
+  },
+  "dashboard": {
+    "title": {
+      "en-US": "Welcome to the dashboard!",
+      "uk-UA": "Вітаємо на головній панелі!"
+    },
+    "yourEmail": {
+      "en-US": "Your email: {email}",
+      "uk-UA": "Ваш email: {email}"
+    },
+    "items.title": {
+      "en-US": "Your items",
+      "uk-UA": "Ваші товари"
+    },
+    "items.loadError": {
+      "en-US": "Load error: {msg}",
+      "uk-UA": "Помилка завантаження: {msg}"
+    },
+    "items.sku": {
+      "en-US": "SKU: {sku}",
+      "uk-UA": "SKU: {sku}"
+    },
+    "items.empty": {
+      "en-US": "You have no items yet.",
+      "uk-UA": "У вас ще немає жодного товару."
+    },
+    "search.errorDefault": {
+      "en-US": "Search error",
+      "uk-UA": "Помилка пошуку"
+    },
+    "search.title": {
+      "en-US": "Semantic Search",
+      "uk-UA": "Семантичний Пошук"
+    },
+    "search.placeholder": {
+      "en-US": "For example, warm blue winter jacket",
+      "uk-UA": "Наприклад, тепла зимова куртка синього кольору"
+    },
+    "search.loading": {
+      "en-US": "Searching...",
+      "uk-UA": "Пошук..."
+    },
+    "search.submit": {
+      "en-US": "Search",
+      "uk-UA": "Знайти"
+    },
+    "search.advanced": {
+      "en-US": "Advanced settings",
+      "uk-UA": "Розширені налаштування"
+    },
+    "search.threshold": {
+      "en-US": "Similarity threshold: {value}",
+      "uk-UA": "Поріг схожості: {value}"
+    },
+    "search.limit": {
+      "en-US": "Results count",
+      "uk-UA": "Кількість результатів"
+    },
+    "search.remember": {
+      "en-US": "Remember these settings",
+      "uk-UA": "Запам’ятовувати ці налаштування"
+    },
+    "search.reset": {
+      "en-US": "Reset to defaults",
+      "uk-UA": "Скинути до типових"
+    },
+    "search.error": {
+      "en-US": "Error: {msg}",
+      "uk-UA": "Помилка: {msg}"
+    },
+    "search.similarity": {
+      "en-US": "SKU: {sku} (Similarity: {pct}%)",
+      "uk-UA": "SKU: {sku} (Схожість: {pct}%)"
+    },
+    "search.empty": {
+      "en-US": "Nothing found. Try lowering the threshold.",
+      "uk-UA": "Нічого не знайдено. Спробуйте знизити поріг схожості."
+    }
+  },
+  "items": {
+    "title": {
+      "en-US": "Manage Items",
+      "uk-UA": "Керування Товарами"
+    },
+    "new": {
+      "en-US": "+ Add item",
+      "uk-UA": "+ Додати товар"
+    },
+    "table.caption": {
+      "en-US": "Items list",
+      "uk-UA": "Список товарів"
+    },
+    "table.name": {
+      "en-US": "Name",
+      "uk-UA": "Назва"
+    },
+    "table.sku": {
+      "en-US": "SKU",
+      "uk-UA": "SKU"
+    },
+    "table.loadError": {
+      "en-US": "Load error: {msg}",
+      "uk-UA": "Помилка завантаження: {msg}"
+    },
+    "table.empty": {
+      "en-US": "You have no items yet.",
+      "uk-UA": "У вас ще немає жодного товару."
+    }
+  },
+  "groups.editor": {
+    "title": {
+      "en-US": "Group editor",
+      "uk-UA": "Редактор групи"
+    },
+    "toTree": {
+      "en-US": "To tree",
+      "uk-UA": "До дерева"
+    },
+    "notFound": {
+      "en-US": "Group not found.",
+      "uk-UA": "Групу не знайдено."
+    },
+    "untitled": {
+      "en-US": "Untitled",
+      "uk-UA": "Без назви"
+    },
+    "deleteHint": {
+      "en-US": "Remove or move child nodes first",
+      "uk-UA": "Спочатку видаліть або перемістіть дочірні вузли"
+    },
+    "deleteNote": {
+      "en-US": "Can be deleted only if there are no child nodes.",
+      "uk-UA": "Можна видалити лише якщо немає дочірніх вузлів."
+    },
+    "children": {
+      "en-US": "Children",
+      "uk-UA": "Вкладення"
+    },
+    "childNamePh": {
+      "en-US": "Child node name",
+      "uk-UA": "Назва дочірнього вузла"
+    },
+    "addChild": {
+      "en-US": "+ Add",
+      "uk-UA": "+ Додати"
+    }
+  }
+}

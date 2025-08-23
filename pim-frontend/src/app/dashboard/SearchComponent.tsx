@@ -2,6 +2,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useT } from '../i18n/I18nProvider';
 
 type SearchResult = {
   id: string;
@@ -33,6 +34,7 @@ function deleteCookie(name: string) {
 }
 
 export default function SearchComponent() {
+  const t = useT();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -114,7 +116,7 @@ export default function SearchComponent() {
       });
       const json = await resp.json().catch(() => ({}));
       if (!resp.ok) {
-        throw new Error(json?.error || 'Помилка пошуку');
+        throw new Error(json?.error || t('dashboard.search.errorDefault', undefined, { fallback: 'Помилка пошуку' }));
       }
       setResults(Array.isArray(json?.data) ? json.data : []);
     } catch (e: unknown) {
@@ -132,14 +134,14 @@ export default function SearchComponent() {
 
   return (
     <div className="rounded-lg border bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-semibold">Семантичний Пошук</h2>
+      <h2 className="text-xl font-semibold">{t('dashboard.search.title', undefined, { fallback: 'Семантичний Пошук' })}</h2>
       <form onSubmit={handleSearch} className="mt-4 space-y-4">
         <div className="flex gap-2">
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Наприклад, тепла зимова куртка синього кольору"
+            placeholder={t('dashboard.search.placeholder', undefined, { fallback: 'Наприклад, тепла зимова куртка синього кольору' })}
             className="flex-grow rounded-md border-gray-300 shadow-sm"
             disabled={loading}
           />
@@ -149,17 +151,17 @@ export default function SearchComponent() {
             disabled={loading}
             aria-busy={loading}
           >
-            {loading ? 'Пошук...' : 'Знайти'}
+            {loading ? t('dashboard.search.loading', undefined, { fallback: 'Пошук...' }) : t('dashboard.search.submit', undefined, { fallback: 'Знайти' })}
           </button>
         </div>
 
         {/* Розширені налаштування */}
         <details>
-          <summary className="cursor-pointer text-sm text-gray-500">Розширені налаштування</summary>
+          <summary className="cursor-pointer text-sm text-gray-500">{t('dashboard.search.advanced', undefined, { fallback: 'Розширені налаштування' })}</summary>
           <div className="mt-4 grid grid-cols-1 gap-4 rounded-md border bg-gray-50 p-4 sm:grid-cols-2">
             <div>
               <label htmlFor="threshold" className="block text-sm font-medium text-gray-700">
-                Поріг схожості: {threshold.toFixed(2)}
+                {t('dashboard.search.threshold', { value: threshold.toFixed(2) }, { fallback: `Поріг схожості: ${threshold.toFixed(2)}` })}
               </label>
               <input
                 id="threshold"
@@ -178,7 +180,7 @@ export default function SearchComponent() {
             </div>
             <div>
               <label htmlFor="limit" className="block text-sm font-medium text-gray-700">
-                Кількість результатів
+                {t('dashboard.search.limit', undefined, { fallback: 'Кількість результатів' })}
               </label>
               <input
                 id="limit"
@@ -193,49 +195,33 @@ export default function SearchComponent() {
             </div>
             <div className="sm:col-span-2 flex items-center justify-between">
               <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300"
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-                  disabled={loading}
-                />
-                Запам&rsquo;ятовувати ці налаштування
+                <input type="checkbox" className="h-4 w-4 rounded border-gray-300" checked={remember} onChange={(e) => setRemember(e.target.checked)} disabled={loading} />
+                {t('dashboard.search.remember', undefined, { fallback: 'Запам’ятовувати ці налаштування' })}
               </label>
-              <button
-                type="button"
-                onClick={handleReset}
-                className="text-sm text-zinc-700 hover:underline"
-                disabled={loading}
-              >
-                Скинути до типових
+              <button type="button" onClick={handleReset} className="text-sm text-zinc-700 hover:underline" disabled={loading}>
+                {t('dashboard.search.reset', undefined, { fallback: 'Скинути до типових' })}
               </button>
             </div>
           </div>
         </details>
       </form>
 
-      {error && <p className="mt-4 text-sm text-red-600">Помилка: {error}</p>}
+      {error && <p className="mt-4 text-sm text-red-600">{t('dashboard.search.error', { msg: error }, { fallback: `Помилка: ${error}` })}</p>}
 
       <div className="mt-6">
         {results.length > 0 ? (
           <ul className="space-y-2">
             {results.map((item) => (
               <li key={item.id} className="rounded border p-0 text-sm">
-                <Link
-                  href={`/dashboard/items/${item.id}`}
-                  className="block rounded p-3 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
-                >
+                <Link href={`/dashboard/items/${item.id}`} className="block rounded p-3 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400">
                   <p className="font-medium">{item.title}</p>
-                  <p className="text-gray-500">
-                    SKU: {item.sku} (Схожість: {Math.round(item.similarity * 100)}%)
-                  </p>
+                  <p className="text-gray-500">{t('dashboard.search.similarity', { sku: item.sku, pct: Math.round(item.similarity * 100) }, { fallback: `SKU: ${item.sku} (Схожість: ${Math.round(item.similarity * 100)}%)` })}</p>
                 </Link>
               </li>
             ))}
           </ul>
         ) : hasSearched && !loading && !error ? (
-          <p className="text-sm text-gray-500">Нічого не знайдено. Спробуйте знизити поріг схожості.</p>
+          <p className="text-sm text-gray-500">{t('dashboard.search.empty', undefined, { fallback: 'Нічого не знайдено. Спробуйте знизити поріг схожості.' })}</p>
         ) : null}
       </div>
     </div>

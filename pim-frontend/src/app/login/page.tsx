@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function LoginPage() {
+function LoginInner() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -13,6 +13,20 @@ export default function LoginPage() {
   const [usePassword, setUsePassword] = useState(true);
   const supabase = createClientComponentClient();
   const router = useRouter();
+  const sp = useSearchParams();
+
+  // Auto-redirect if already signed in
+  useEffect(() => {
+    const run = async () => {
+      const next = sp.get('next');
+      const safe = next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard';
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        router.replace(safe);
+      }
+    };
+    run();
+  }, [router, sp, supabase]);
 
   const handleMagic = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -24,9 +38,11 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '')) ?? window.location.origin;
+      const next = sp.get('next');
+      const params = next ? `?next=${encodeURIComponent(next)}` : '';
       const { error } = await supabase.auth.signInWithOtp({
         email: normalizedEmail,
-        options: { emailRedirectTo: `${baseUrl}/auth/callback` },
+        options: { emailRedirectTo: `${baseUrl}/auth/cb${params}` },
       });
       if (error) setErrorMsg(error.message); else { setEmail(normalizedEmail); setSubmitted(true); }
     } catch (e: unknown) { setErrorMsg(e instanceof Error ? e.message : String(e)); }
@@ -38,7 +54,9 @@ export default function LoginPage() {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
       if (error) { setErrorMsg(error.message); return; }
-      if (data.session) router.replace('/dashboard');
+      const next = sp.get('next');
+      const safe = next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard';
+      if (data.session) router.replace(safe);
     } catch (e:any) { setErrorMsg(e.message||'Помилка входу'); } finally { setLoading(false); }
   }
 
@@ -47,8 +65,9 @@ export default function LoginPage() {
     try {
       const { data, error } = await supabase.auth.signUp({ email: email.trim().toLowerCase(), password });
       if (error) { setErrorMsg(error.message); return; }
-      // якщо Confirm email OFF — одразу буде сесія
-      if (data.session) router.replace('/dashboard'); else setSubmitted(true);
+      const next = sp.get('next');
+      const safe = next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard';
+      if (data.session) router.replace(safe); else setSubmitted(true);
     } catch (e:any) { setErrorMsg(e.message||'Помилка реєстрації'); } finally { setLoading(false); }
   }
 
@@ -99,5 +118,13 @@ export default function LoginPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginInner />
+    </Suspense>
   );
 }

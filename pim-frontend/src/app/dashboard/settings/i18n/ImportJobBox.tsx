@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import JobStatus from './JobStatus';
+import { useT } from '@/app/i18n/I18nProvider';
 
 const templateJson = `[
   { "namespace": "emails", "key": "welcome", "locale": "en", "value": "Welcome {name}" },
@@ -24,6 +25,7 @@ export default function ImportJobBox() {
   const [orgId, setOrgId] = useState<string>('');
   const [toast, setToast] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const t = useT();
 
   useEffect(() => {
     (async () => {
@@ -74,9 +76,9 @@ export default function ImportJobBox() {
         body: JSON.stringify({ format, payload: text })
       });
       const j = await res.json();
-      if (!res.ok) { setError(mapError(res.status, j)); setToast('Перевірка не пройдена'); setTimeout(()=>setToast(null), 2500); return; }
+      if (!res.ok) { setError(mapError(res.status, j)); setToast(t('settings.import.preflight.fail', undefined, { fallback: 'Перевірка не пройдена' })); setTimeout(()=>setToast(null), 2500); return; }
       setPreflight(j);
-      if (j.total === 0) { setToast('Немає елементів для імпорту'); setTimeout(()=>setToast(null), 2500); }
+      if (j.total === 0) { setToast(t('settings.import.nothing', undefined, { fallback: 'Немає елементів для імпорту' })); setTimeout(()=>setToast(null), 2500); }
     } catch (e:any) {
       setError(e.message || 'preflight_failed');
     } finally {
@@ -86,14 +88,14 @@ export default function ImportJobBox() {
 
   function mapError(status: number, body: any): string {
     const code = body?.error || '';
-    if (status === 403) return scope === 'global' ? 'Потрібні права platform_admin для Global' : 'Немає прав';
-    if (code === 'no_org' || code === 'no_org_membership') return 'Ви не в організації або orgId недійсний';
-    if (code === 'too_many_jobs') return 'Занадто багато активних задач. Спробуйте пізніше';
-    if (code === 'rate_limited') return `Перевищено ліміт. Зачекайте ${body?.windowMinutes||10} хв`;
-    if (code === 'payload_too_large') return 'Payload завеликий. Обмеження 1MB';
-    if (code === 'too_many_items') return `Занадто багато рядків. Максимум ${body?.max||''}`;
-    if (code === 'invalid_locale') return 'Невалідна або вимкнена локаль';
-    if (code === 'bad_request') return 'Некоректний формат або вхідні дані';
+    if (status === 403) return scope === 'global' ? t('settings.import.err.adminGlobal', undefined, { fallback: 'Потрібні права platform_admin для Global' }) : t('settings.import.err.noRights', undefined, { fallback: 'Немає прав' });
+    if (code === 'no_org' || code === 'no_org_membership') return t('settings.import.err.noOrg', undefined, { fallback: 'Ви не в організації або orgId недійсний' });
+    if (code === 'too_many_jobs') return t('settings.import.err.tooMany', undefined, { fallback: 'Занадто багато активних задач. Спробуйте пізніше' });
+    if (code === 'rate_limited') return t('settings.import.err.rateLimited', { mins: body?.windowMinutes||10 }, { fallback: 'Перевищено ліміт. Зачекайте {mins} хв' });
+    if (code === 'payload_too_large') return t('settings.import.err.payloadLarge', undefined, { fallback: 'Payload завеликий. Обмеження 1MB' });
+    if (code === 'too_many_items') return t('settings.import.err.tooManyItems', { max: body?.max||'' }, { fallback: 'Занадто багато рядків. Максимум {max}' });
+    if (code === 'invalid_locale') return t('settings.import.err.invalidLocale', undefined, { fallback: 'Невалідна або вимкнена локаль' });
+    if (code === 'bad_request') return t('settings.import.err.badRequest', undefined, { fallback: 'Некоректний формат або вхідні дані' });
     return body?.error || `Помилка (${status})`;
   }
 
@@ -102,11 +104,11 @@ export default function ImportJobBox() {
     setJobId(null);
     try {
       if (!isAdmin && scope === 'global') {
-        setError('Потрібні права platform_admin для Global');
+        setError(t('settings.import.err.adminGlobal', undefined, { fallback: 'Потрібні права platform_admin для Global' }));
         return;
       }
       if (scope === 'org' && (!orgId || orgs.length === 0)) {
-        setError('Ви не в організації або не обрано org');
+        setError(t('settings.import.err.noOrg', undefined, { fallback: 'Ви не в організації або не обрано org' }));
         return;
       }
       const res = await fetch('/api/i18n/import/jobs', {
@@ -148,28 +150,28 @@ export default function ImportJobBox() {
         {scope==='org' && (
           <select value={orgId} onChange={(e)=>setOrgId(e.target.value)} className="rounded border px-2 py-1 text-xs">
             {orgs.length===0 ? (
-              <option value="">нема org</option>
+              <option value="">{t('settings.import.noOrg', undefined, { fallback: 'нема org' })}</option>
             ) : orgs.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
           </select>
         )}
-        <span className="rounded bg-gray-100 px-2 py-0.5 text-[10px] text-gray-600">Scope: {isAdmin ? scope : 'org'}</span>
-        <button onClick={runPreflight} disabled={!text || checking} className="rounded border px-3 py-1">{checking ? 'Перевірка…' : 'Перевірити'}</button>
-        <button onClick={startJob} disabled={!canStart} className="rounded bg-zinc-800 px-3 py-1 text-white disabled:opacity-50">Start Job</button>
+        <span className="rounded bg-gray-100 px-2 py-0.5 text-[10px] text-gray-600">{t('settings.import.scope', { scope: isAdmin ? scope : 'org' }, { fallback: 'Scope: {scope}' })}</span>
+        <button onClick={runPreflight} disabled={!text || checking} className="rounded border px-3 py-1">{checking ? t('settings.import.checking', undefined, { fallback: 'Перевірка…' }) : t('settings.import.check', undefined, { fallback: 'Перевірити' })}</button>
+        <button onClick={startJob} disabled={!canStart} className="rounded bg-zinc-800 px-3 py-1 text-white disabled:opacity-50">{t('settings.import.start', undefined, { fallback: 'Start Job' })}</button>
       </div>
       <div className="flex items-center gap-2 text-xs text-gray-600">
-        <button onClick={()=>download('i18n-template.json', templateJson, 'application/json')} className="underline">Завантажити шаблон JSON</button>
+        <button onClick={()=>download('i18n-template.json', templateJson, 'application/json')} className="underline">{t('settings.import.downloadJson', undefined, { fallback: 'Завантажити шаблон JSON' })}</button>
         <span>·</span>
-        <button onClick={()=>download('i18n-template-long.csv', templateCsvLong, 'text/csv')} className="underline">Завантажити шаблон CSV</button>
+        <button onClick={()=>download('i18n-template-long.csv', templateCsvLong, 'text/csv')} className="underline">{t('settings.import.downloadCsv', undefined, { fallback: 'Завантажити шаблон CSV' })}</button>
       </div>
-      <textarea value={text} onChange={(e)=>setText(e.target.value)} className="h-36 w-full rounded border p-2 font-mono" placeholder='[{"namespace":"sidebar","key":"home","locale":"uk","value":"Головна"}] або {"sidebar": {"home": {"uk":"Головна"}}} або CSV' />
+      <textarea value={text} onChange={(e)=>setText(e.target.value)} className="h-36 w-full rounded border p-2 font-mono" placeholder={t('settings.import.placeholder', undefined, { fallback: '[{"namespace":"sidebar","key":"home","locale":"uk","value":"Головна"}] або {"sidebar": {"home": {"uk":"Головна"}}} або CSV' })} />
       {error && <div className="rounded border border-red-200 bg-red-50 p-2 text-xs text-red-700">{error}</div>}
       {preflight && (
         <div className="rounded border p-2 text-xs">
-          <div>Елементів: {preflight.total}, Namespaces: {preflight.namespaces}, Keys: {preflight.keys}, ICU warnings: {preflight.placeholder_warnings}</div>
+          <div>{t('settings.import.summary', { total: preflight.total, namespaces: preflight.namespaces, keys: preflight.keys, warns: preflight.placeholder_warnings }, { fallback: 'Елементів: {total}, Namespaces: {namespaces}, Keys: {keys}, ICU warnings: {warns}' })}</div>
           {typeof preflight.invalid_locales === 'number' && (
-            <div className="mt-1">Невалідних локалей: {preflight.invalid_locales}{preflight.invalid_locale_samples?.length>0 && (
+            <div className="mt-1">{t('settings.import.invalidLocales', { n: preflight.invalid_locales }, { fallback: 'Невалідних локалей: {n}' })}{preflight.invalid_locale_samples?.length>0 && (
               <>
-                <div className="mt-1">Приклади (до 50):</div>
+                <div className="mt-1">{t('settings.import.samples', undefined, { fallback: 'Приклади (до 50):' })}</div>
                 <ul className="mt-1 list-disc pl-4">
                   {preflight.invalid_locale_samples.slice(0,10).map((x:any,i:number)=> (<li key={i}>{x.namespace}.{x.key} [{x.locale}]</li>))}
                 </ul>
@@ -179,7 +181,7 @@ export default function ImportJobBox() {
           {preflight.warnings?.length > 0 && (
             <ul className="mt-1 list-disc pl-4">
               {preflight.warnings.map((w:any, i:number)=> (
-                <li key={i}>{w.namespace}.{w.key}: {w.baseLocale} → {w.locale} · missing: [{w.missing.join(', ')}], extra: [{w.extra.join(', ')}]</li>
+                <li key={i}>{w.namespace}.{w.key}: {w.baseLocale} → {w.locale} · {t('settings.import.missing', { items: w.missing.join(', ') }, { fallback: 'missing: [{items}]' })}, {t('settings.import.extra', { items: w.extra.join(', ') }, { fallback: 'extra: [{items}]' })}</li>
               ))}
             </ul>
           )}

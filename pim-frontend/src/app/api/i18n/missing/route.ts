@@ -6,7 +6,8 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 async function getSupabase() {
-  return createRouteHandlerClient({ cookies });
+  const cookieStore = await cookies();
+  return createRouteHandlerClient({ cookies: () => Promise.resolve(cookieStore) });
 }
 
 export async function POST(req: NextRequest) {

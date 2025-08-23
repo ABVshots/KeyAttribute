@@ -5,6 +5,11 @@ import JobStatus from './JobStatus';
 import RetryJobButton from './RetryJobButton';
 import DeleteJobButton from './DeleteJobButton';
 
+// Minimal server-friendly i18n to surface keys for extractor
+function tS(k: string, _p?: Record<string, any>, o?: { fallback?: string }) {
+  return o?.fallback || k;
+}
+
 async function JobLogs({ jobId }: { jobId: string }) {
   const supabase = createServerComponentClient({ cookies });
   const { data: rows } = await supabase
@@ -13,7 +18,7 @@ async function JobLogs({ jobId }: { jobId: string }) {
     .eq('job_id', jobId)
     .order('ts', { ascending: true })
     .limit(100);
-  if (!rows || rows.length === 0) return <div className="text-xs text-gray-400">Логи відсутні</div>;
+  if (!rows || rows.length === 0) return <div className="text-xs text-gray-400">{tS('settings.jobs.logs.empty', undefined, { fallback: 'Логи відсутні' })}</div>;
   return (
     <ul className="text-xs">
       {rows.map((r:any, i:number) => (
@@ -31,8 +36,8 @@ export default async function ImportJobsList({ pageSize = 10, searchParams = {} 
   const status = (searchParams.jobStatus || '').trim();
   const scope = (searchParams.jobScope || '').trim();
   const q = (searchParams.q || '').trim();
-  const days = Math.max(0, Number(searchParams.days || '0') || 0); // 0 = no filter
-  const cursor = (searchParams.jobsCursor || '').trim(); // ISO date string
+  const days = Math.max(0, Number(searchParams.days || '0') || 0);
+  const cursor = (searchParams.jobsCursor || '').trim();
 
   let query = supabase
     .from('i18n_import_jobs')
@@ -62,7 +67,7 @@ export default async function ImportJobsList({ pageSize = 10, searchParams = {} 
     if (j.status === 'running') {
       if (!j.finished_at) {
         const started = new Date(j.created_at).getTime();
-        return (now - started) > 10 * 60 * 1000; // stuck > 10 min
+        return (now - started) > 10 * 60 * 1000;
       }
       return false;
     }
@@ -73,8 +78,8 @@ export default async function ImportJobsList({ pageSize = 10, searchParams = {} 
     const params = new URLSearchParams();
     const sp = (searchParams || {}) as Record<string, any>;
     for (const [k, v] of Object.entries(sp)) {
-      if (k === 'jobsPage' || k === 'jobsPageSize') continue; // drop legacy paging
-      if (k === 'jobsCursor') continue; // we'll set below
+      if (k === 'jobsPage' || k === 'jobsPageSize') continue;
+      if (k === 'jobsCursor') continue;
       if (v == null) continue;
       if (typeof v === 'string') params.set(k, v);
       else if (Array.isArray(v)) {
@@ -91,13 +96,12 @@ export default async function ImportJobsList({ pageSize = 10, searchParams = {} 
     <div className="flex flex-col gap-2">
       <div className="sticky top-0 z-10 -mx-3 -mt-3 bg-white/90 px-3 py-2 backdrop-blur supports-[backdrop-filter]:bg-white/70">
         <form method="get" action="/dashboard/settings/i18n/jobs" className="flex flex-wrap items-end gap-2 text-xs">
-          {/* Reset cursor on filter apply */}
           <input type="hidden" name="jobsCursor" value="" />
           <input type="hidden" name="jobsPageSize" value={String(pageSize)} />
           <div className="flex flex-col">
-            <label className="mb-1">Status</label>
+            <label className="mb-1">{tS('settings.jobs.filters.status', undefined, { fallback: 'Status' })}</label>
             <select name="jobStatus" defaultValue={status} className="rounded border px-2 py-1">
-              <option value="">All</option>
+              <option value="">{tS('settings.jobs.filters.all', undefined, { fallback: 'All' })}</option>
               <option value="queued">queued</option>
               <option value="running">running</option>
               <option value="done">done</option>
@@ -105,30 +109,30 @@ export default async function ImportJobsList({ pageSize = 10, searchParams = {} 
             </select>
           </div>
           <div className="flex flex-col">
-            <label className="mb-1">Scope</label>
+            <label className="mb-1">{tS('settings.jobs.filters.scope', undefined, { fallback: 'Scope' })}</label>
             <select name="jobScope" defaultValue={scope} className="rounded border px-2 py-1">
-              <option value="">All</option>
+              <option value="">{tS('settings.jobs.filters.all', undefined, { fallback: 'All' })}</option>
               <option value="global">global</option>
               <option value="org">org</option>
             </select>
           </div>
           <div className="flex flex-col">
-            <label className="mb-1">Search (ID)</label>
+            <label className="mb-1">{tS('settings.jobs.filters.search', undefined, { fallback: 'Search (ID)' })}</label>
             <input name="q" defaultValue={q} placeholder="uuid…" className="w-48 rounded border px-2 py-1" />
           </div>
           <div className="flex flex-col">
-            <label className="mb-1">Days</label>
+            <label className="mb-1">{tS('settings.jobs.filters.days', undefined, { fallback: 'Days' })}</label>
             <input name="days" type="number" min={0} max={365} defaultValue={days || ''} placeholder="0" className="w-20 rounded border px-2 py-1" />
           </div>
-          <button className="rounded border px-3 py-1">Apply</button>
-          <Link href="/dashboard/settings/i18n/jobs" className="rounded border px-3 py-1">Clear</Link>
+          <button className="rounded border px-3 py-1">{tS('settings.jobs.filters.apply', undefined, { fallback: 'Apply' })}</button>
+          <Link href="/dashboard/settings/i18n/jobs" className="rounded border px-3 py-1">{tS('settings.jobs.filters.clear', undefined, { fallback: 'Clear' })}</Link>
         </form>
       </div>
 
       <div className="max-h-96 overflow-auto pr-1">
         <div className="space-y-2">
           {(items||[]).length === 0 ? (
-            <div className="text-sm text-gray-500">Немає джобів</div>
+            <div className="text-sm text-gray-500">{tS('settings.jobs.empty', undefined, { fallback: 'Немає джобів' })}</div>
           ) : (
             items!.map((j: any) => (
               <div key={j.id} className="rounded border p-2">
@@ -138,7 +142,7 @@ export default async function ImportJobsList({ pageSize = 10, searchParams = {} 
                     <span className="rounded bg-gray-100 px-1 py-0.5 text-[10px] uppercase">{j.scope}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Link href={`/dashboard/settings/i18n/jobs/${j.id}`} className="rounded border px-2 py-0.5">Деталі</Link>
+                    <Link href={`/dashboard/settings/i18n/jobs/${j.id}`} className="rounded border px-2 py-0.5">{tS('settings.jobs.details', undefined, { fallback: 'Деталі' })}</Link>
                     <RetryJobButton id={j.id} disabled={!canRetry(j)} />
                     <DeleteJobButton id={j.id} disabled={j.status==='running' || j.status==='queued'} />
                   </div>
@@ -154,10 +158,10 @@ export default async function ImportJobsList({ pageSize = 10, searchParams = {} 
       </div>
 
       <div className="mt-1 flex items-center justify-between text-xs text-gray-600">
-        <div>{cursor ? `Показано новіші за ${new Date(cursor).toLocaleString()}` : 'Показано найновіші'}</div>
+        <div>{cursor ? tS('settings.jobs.shownNewer', { time: new Date(cursor).toLocaleString() }, { fallback: `Показано новіші за ${new Date(cursor).toLocaleString()}` }) : tS('settings.jobs.shownLatest', undefined, { fallback: 'Показано найновіші' })}</div>
         <div className="flex items-center gap-2">
-          <Link href={urlWithCursor()} className={`rounded border px-2 py-1 ${cursor ? '' : 'pointer-events-none opacity-50'}`}>Reset</Link>
-          <Link href={urlWithCursor(nextCursor)} className={`rounded border px-2 py-1 ${hasMore ? '' : 'pointer-events-none opacity-50'}`}>Load older</Link>
+          <Link href={urlWithCursor()} className={`rounded border px-2 py-1 ${cursor ? '' : 'pointer-events-none opacity-50'}`}>{tS('settings.jobs.reset', undefined, { fallback: 'Reset' })}</Link>
+          <Link href={urlWithCursor(nextCursor)} className={`rounded border px-2 py-1 ${hasMore ? '' : 'pointer-events-none opacity-50'}`}>{tS('settings.jobs.loadOlder', undefined, { fallback: 'Load older' })}</Link>
         </div>
       </div>
     </div>

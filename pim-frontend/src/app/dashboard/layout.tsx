@@ -113,7 +113,7 @@ export default async function DashboardLayout({
   } = await supabase.auth.getUser();
 
   if (!bypass && error) {
-    redirect('/login?error=auth');
+    redirect('/login');
   }
   if (!bypass && !user) {
     redirect('/login');

@@ -5,6 +5,150 @@ import { cookies } from 'next/headers';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+type Item = { namespace: string; key: string; locale: string; value: string };
+
+function parseCsv(text: string): string[][] {
+  const rows: string[][] = [];
+  let cur = ''; let row: string[] = []; let inQuotes = false;
+  for (let i=0;i<text.length;i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch==='"') { if (text[i+1]==='"') { cur+='"'; i++; } else { inQuotes=false; } }
+      else cur += ch;
+    } else {
+      if (ch==='"') inQuotes=true;
+      else if (ch===',') { row.push(cur); cur=''; }
+      else if (ch==='\n') { row.push(cur); rows.push(row); row=[]; cur=''; }
+      else if (ch==='\r') {/* ignore */}
+      else cur += ch;
+    }
+  }
+  row.push(cur); rows.push(row);
+  return rows.filter(r=>r.some(c=>String(c).trim().length>0));
+}
+
+function parseItems(format: 'json'|'csv', payload: string): Item[] {
+  const items: Item[] = [];
+  try {
+    if (format==='json') {
+      const data = JSON.parse(payload);
+      if (Array.isArray(data)) {
+        for (const x of data) {
+          if (!x || typeof x !== 'object') continue;
+          const ns = String((x as any)?.namespace||'').trim();
+          const k = String((x as any)?.key||'').trim();
+          const loc = String((x as any)?.locale||'').trim();
+          const val = String((x as any)?.value||'').trim();
+          if (ns && k && loc && val) items.push({ namespace: ns, key: k, locale: loc, value: val });
+        }
+      } else if (data && typeof data === 'object') {
+        for (const [ns, keys] of Object.entries<any>(data)) {
+          if (!keys || typeof keys !== 'object') continue;
+          for (const [k, locs] of Object.entries<any>(keys)) {
+            if (!locs || typeof locs !== 'object') continue;
+            for (const [loc, val] of Object.entries<any>(locs)) {
+              const v = String(val ?? '').trim(); if (!v) continue;
+              items.push({ namespace: String(ns), key: String(k), locale: String(loc), value: v });
+            }
+          }
+        }
+      }
+    } else {
+      const rows = parseCsv(payload);
+      if (rows.length>1) {
+        const header = rows[0].map(h=>String(h||'').trim());
+        const idxNs = header.findIndex(h=>h.toLowerCase()==='namespace');
+        const idxKey = header.findIndex(h=>h.toLowerCase()==='key');
+        const idxLocale = header.findIndex(h=>h.toLowerCase()==='locale');
+        const idxValue = header.findIndex(h=>h.toLowerCase()==='value');
+        if (idxNs>=0 && idxKey>=0 && idxLocale>=0 && idxValue>=0) {
+          for (const r of rows.slice(1)) {
+            const ns = String(r[idxNs]||'').trim();
+            const k = String(r[idxKey]||'').trim();
+            const loc = String(r[idxLocale]||'').trim();
+            const val = String(r[idxValue]||'').trim();
+            if (ns && k && loc && val) items.push({ namespace: ns, key: k, locale: loc, value: val });
+          }
+        } else if (idxNs>=0 && idxKey>=0) {
+          const localeCols = header.map((h,i)=>({h,i})).filter(x=>x.i!==idxNs && x.i!==idxKey);
+          for (const r of rows.slice(1)) {
+            const ns = String(r[idxNs]||'').trim();
+            const k = String(r[idxKey]||'').trim();
+            if (!ns || !k) continue;
+            for (const {h,i} of localeCols) {
+              const val = String(r[i]||'').trim(); if (!val) continue;
+              items.push({ namespace: ns, key: k, locale: String(h).trim(), value: val });
+            }
+          }
+        }
+      }
+    }
+  } catch {/* ignore */}
+  return items;
+}
+
+async function addLog(supabase: any, jobId: string, level: 'info'|'debug'|'warn'|'error', message: string, data?: any) {
+  try {
+    await supabase.from('i18n_import_job_logs').insert({ job_id: jobId, level, message, data });
+  } catch {}
+}
+
+async function processInline(supabase: any, params: { jobId: string; scope: 'global'|'org'; orgId: string|null; format: 'json'|'csv'; payload: string }) {
+  const { jobId, scope, orgId, format, payload } = params;
+  await supabase.from('i18n_import_jobs').update({ status: 'running' }).eq('id', jobId);
+  await addLog(supabase, jobId, 'info', 'Inline importer started');
+
+  const items = parseItems(format, payload);
+  const total = items.length;
+  await supabase.from('i18n_import_jobs').update({ total, progress: 0 }).eq('id', jobId);
+  await addLog(supabase, jobId, 'debug', `Parsed items`, { count: total });
+  if (total === 0) {
+    await supabase.from('i18n_import_jobs').update({ status: 'failed', stats: { error: 'no_items' } }).eq('id', jobId);
+    return;
+  }
+
+  // Ensure namespaces
+  const namespaces = Array.from(new Set(items.map(i=>i.namespace)));
+  if (namespaces.length) {
+    await supabase.from('ui_namespaces').upsert(namespaces.map(n=>({ name: n })), { onConflict: 'name' }).throwOnError();
+  }
+  await addLog(supabase, jobId, 'debug', 'Namespaces ensured', { count: namespaces.length });
+
+  // Ensure keys
+  const pairs = Array.from(new Set(items.map(i=>`${i.namespace}::${i.key}`)));
+  if (pairs.length) {
+    const rows = pairs.map(p=>({ namespace: p.split('::')[0]!, key: p.split('::')[1]! }));
+    await supabase.from('ui_keys').upsert(rows, { onConflict: 'namespace,key' }).throwOnError();
+  }
+  await addLog(supabase, jobId, 'debug', 'Keys ensured', { count: pairs.length });
+
+  // Fetch key ids map
+  const { data: keysRows } = await supabase.from('ui_keys').select('id, namespace, key').in('namespace', namespaces);
+  const keyMap = new Map<string, string>((keysRows||[]).map((r:any)=>[`${r.namespace}::${r.key}`, r.id]));
+
+  // Upsert messages
+  let created = 0; let updated = 0; let processed = 0;
+  for (const it of items) {
+    const id = keyMap.get(`${it.namespace}::${it.key}`);
+    if (!id) continue;
+    if (scope==='global') {
+      const { data, error } = await supabase.from('ui_messages_global').upsert({ key_id: id, locale: it.locale, value: it.value, status: 'approved' }, { onConflict: 'key_id,locale' }).select('key_id');
+      if (!error) { if ((data||[]).length===1) updated++; else created++; }
+    } else {
+      if (!orgId) continue;
+      const { data, error } = await supabase.from('ui_messages_overrides').upsert({ org_id: orgId, key_id: id, locale: it.locale, value: it.value, status: 'approved' }, { onConflict: 'org_id,key_id,locale' }).select('key_id');
+      if (!error) { if ((data||[]).length===1) updated++; else created++; }
+    }
+    processed++;
+    if (processed % 50 === 0) {
+      await supabase.from('i18n_import_jobs').update({ progress: processed }).eq('id', jobId);
+    }
+  }
+
+  await supabase.from('i18n_import_jobs').update({ status: 'done', progress: processed, stats: { total, created, updated } }).eq('id', jobId);
+  await addLog(supabase, jobId, 'info', 'Inline importer finished', { total, created, updated });
+}
+
 export async function GET(req: NextRequest) {
   const supabase = createRouteHandlerClient({ cookies });
   const { searchParams } = new URL(req.url);
@@ -115,18 +259,24 @@ export async function POST(req: NextRequest) {
     .insert({ job_id: job.id as string, payload, created_by: user.id });
   if (pErr) return new Response(JSON.stringify({ error: pErr.message || 'payload_store_failed' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
 
+  // Inline fallback importer (dev-safe). Set IMPORT_INLINE=1 to force inline.
+  const useInline = process.env.IMPORT_INLINE === '1' || process.env.NODE_ENV !== 'production';
+  if (useInline) {
+    try {
+      await processInline(supabase, { jobId: job.id as string, scope, orgId, format, payload });
+    } catch (e: any) {
+      await supabase.from('i18n_import_jobs').update({ status: 'failed', stats: { error: String(e?.message||e) } }).eq('id', job.id as string);
+    }
+    return new Response(JSON.stringify({ id: job.id }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  }
+
   // Invoke Edge Function worker (fire-and-forget)
   try {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     const fn = 'i18n-import-worker';
     await fetch(`${url}/functions/v1/${fn}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${anonKey}`
-      },
-      body: JSON.stringify({ jobId: job.id })
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${anonKey}` }, body: JSON.stringify({ jobId: job.id })
     }).catch(()=>{});
   } catch {}
 

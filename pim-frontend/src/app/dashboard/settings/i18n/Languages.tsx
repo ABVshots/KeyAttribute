@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { etagFetchJson } from '@/lib/etagFetch';
+import { useT } from '@/app/i18n/I18nProvider';
 
 export function LanguagesManager() {
   const [items, setItems] = useState<string[]>([]);
   const [def, setDef] = useState<string | null>(null);
   const [loc, setLoc] = useState('');
+  const t = useT();
 
   useEffect(() => { void load(); }, []);
 
@@ -37,19 +39,21 @@ export function LanguagesManager() {
     <div className="space-y-2 text-sm">
       <div className="flex gap-2">
         <input value={loc} onChange={(e)=>setLoc(e.target.value)} placeholder="uk" className="rounded border px-2 py-1" />
-        <button onClick={add} className="rounded border px-3 py-1">Додати мову UI</button>
+        <button onClick={add} className="rounded border px-3 py-1">{t('settings.languages.addUiLanguage', undefined, { fallback: 'Додати мову UI' })}</button>
       </div>
       <ul className="divide-y rounded border bg-white">
         {items.map(l => (
           <li key={l} className="flex items-center justify-between p-2">
-            <span>{l} {def===l && <em className="text-xs text-green-600">(default)</em>}</span>
+            <span>
+              {l} {def===l && <em className="text-xs text-green-600">({t('settings.languages.default', undefined, { fallback: 'default' })})</em>}
+            </span>
             <div className="flex gap-2">
-              <button onClick={()=>makeDefault(l)} className="rounded border px-2 py-1 text-xs">За замовчуванням</button>
-              <button onClick={()=>del(l)} className="rounded border px-2 py-1 text-xs">Видалити</button>
+              <button onClick={()=>makeDefault(l)} className="rounded border px-2 py-1 text-xs">{t('settings.languages.makeDefault', undefined, { fallback: 'За замовчуванням' })}</button>
+              <button onClick={()=>del(l)} className="rounded border px-2 py-1 text-xs">{t('settings.languages.delete', undefined, { fallback: 'Видалити' })}</button>
             </div>
           </li>
         ))}
-        {items.length===0 && <li className="p-2 text-gray-500">Немає мов</li>}
+        {items.length===0 && <li className="p-2 text-gray-500">{t('settings.languages.empty', undefined, { fallback: 'Немає мов' })}</li>}
       </ul>
     </div>
   );

@@ -7,6 +7,8 @@ import ListClient from './ListClient';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+function tS(k: string, _p?: Record<string, any>, o?: { fallback?: string }) { return o?.fallback || k; }
+
 export default async function GroupsPage({ searchParams }: { searchParams?: Promise<Record<string, string>> }) {
   const supabase = createServerComponentClient({ cookies });
   const sp = (await searchParams) || {};
@@ -19,7 +21,6 @@ export default async function GroupsPage({ searchParams }: { searchParams?: Prom
   const size = Math.min(100, Math.max(5, parseInt(sp.size || '25', 10) || 25));
   const exact = sp.exact === '1';
 
-  // Resolve type label if provided
   const { data: type } = typeId
     ? await supabase.from('group_types').select('id, label').eq('id', typeId).maybeSingle()
     : { data: null } as any;
@@ -113,43 +114,43 @@ export default async function GroupsPage({ searchParams }: { searchParams?: Prom
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{type?.label ? `Довідник: ${type.label}` : 'Керування Групами'}</h1>
-        <Link href="/dashboard/groups/new" className="rounded-lg bg-zinc-800 px-4 py-2 text-sm text-white hover:bg-zinc-700">+ Додати</Link>
+        <h1 className="text-2xl font-bold">{type?.label ? tS('groups.titleWithType', { type: type.label }, { fallback: `Довідник: ${type.label}` }) : tS('groups.manage', undefined, { fallback: 'Керування Групами' })}</h1>
+        <Link href="/dashboard/groups/new" className="rounded-lg bg-zinc-800 px-4 py-2 text-sm text-white hover:bg-zinc-700">{tS('groups.add', undefined, { fallback: '+ Додати' })}</Link>
       </div>
 
       <form method="get" className="mb-3 grid grid-cols-1 gap-2 md:grid-cols-6">
         <input type="hidden" name="type" value={typeId} />
-        <input name="q" defaultValue={q} placeholder="Пошук…" className="rounded border px-2 py-1 text-sm md:col-span-2" />
+        <input name="q" defaultValue={q} placeholder={tS('groups.search', undefined, { fallback: 'Пошук…' })} className="rounded border px-2 py-1 text-sm md:col-span-2" />
         <select name="locale" defaultValue={locale} className="rounded border px-2 py-1 text-sm">
           {locales.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
         </select>
         <select name="sort" defaultValue={sort} className="rounded border px-2 py-1 text-sm">
-          <option value="name">Назва</option>
-          <option value="created">Створено</option>
+          <option value="name">{tS('groups.sort.name', undefined, { fallback: 'Назва' })}</option>
+          <option value="created">{tS('groups.sort.created', undefined, { fallback: 'Створено' })}</option>
         </select>
         <select name="order" defaultValue={order} className="rounded border px-2 py-1 text-sm">
-          <option value="asc">ASC</option>
-          <option value="desc">DESC</option>
+          <option value="asc">{tS('common.asc', undefined, { fallback: 'ASC' })}</option>
+          <option value="desc">{tS('common.desc', undefined, { fallback: 'DESC' })}</option>
         </select>
         <div className="flex items-center gap-2">
-          <label className="text-xs"><input type="checkbox" name="exact" value="1" defaultChecked={exact} /> exact</label>
+          <label className="text-xs"><input type="checkbox" name="exact" value="1" defaultChecked={exact} /> {tS('groups.exact', undefined, { fallback: 'exact' })}</label>
           <select name="size" defaultValue={String(size)} className="rounded border px-2 py-1 text-sm">
-            {[10,25,50,100].map(n => <option key={n} value={n}>{n}/page</option>)}
+            {[10,25,50,100].map(n => <option key={n} value={n}>{tS('common.perPage', { n }, { fallback: `${n}/page` })}</option>)}
           </select>
-          <button type="submit" className="rounded bg-zinc-800 px-3 py-1 text-xs text-white">Фільтрувати</button>
+          <button type="submit" className="rounded bg-zinc-800 px-3 py-1 text-xs text:white">{tS('common.filter', undefined, { fallback: 'Фільтрувати' })}</button>
         </div>
       </form>
 
-      <div className="rounded-lg border bg-white p-2 shadow-sm">
+      <div className="rounded-lg border bg:white p-2 shadow-sm">
         <ListClient rows={display} typeId={typeId || undefined} />
       </div>
 
       <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
-        <div>Всього: {total}</div>
+        <div>{tS('common.total', { total }, { fallback: `Всього: ${total}` })}</div>
         <div className="flex items-center gap-2">
-          <PageLink page={page-1} disabled={page<=1} params={{ ...sp, page: String(page-1), size: String(size) }}>Назад</PageLink>
-          <span>Сторінка {page}</span>
-          <PageLink page={page+1} disabled={start+size>=total} params={{ ...sp, page: String(page+1), size: String(size) }}>Далі</PageLink>
+          <PageLink page={page-1} disabled={page<=1} params={{ ...sp, page: String(page-1), size: String(size) }}>{tS('common.prev', undefined, { fallback: 'Назад' })}</PageLink>
+          <span>{tS('common.pageX', { page }, { fallback: `Сторінка ${page}` })}</span>
+          <PageLink page={page+1} disabled={start+size>=total} params={{ ...sp, page: String(page+1), size: String(size) }}>{tS('common.next', undefined, { fallback: 'Далі' })}</PageLink>
         </div>
       </div>
     </div>

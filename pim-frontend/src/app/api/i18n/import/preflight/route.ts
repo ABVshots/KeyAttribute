@@ -41,7 +41,9 @@ function parseItems(format: 'json'|'csv', payload: string): Item[] {
     if (format === 'json') {
       const data = JSON.parse(payload);
       if (Array.isArray(data)) {
+        // array of objects
         for (const x of data) {
+          if (!x || typeof x !== 'object') continue;
           const ns = String(x?.namespace||'').trim();
           const k = String(x?.key||'').trim();
           const loc = String(x?.locale||'').trim();
@@ -49,6 +51,7 @@ function parseItems(format: 'json'|'csv', payload: string): Item[] {
           if (ns && k && loc && val) items.push({ namespace: ns, key: k, locale: loc, value: val });
         }
       } else if (data && typeof data === 'object') {
+        // nested object format
         for (const [ns, keys] of Object.entries<any>(data)) {
           if (!keys || typeof keys !== 'object') continue;
           for (const [k, locs] of Object.entries<any>(keys)) {
@@ -114,10 +117,16 @@ export async function POST(req: NextRequest) {
   const cookieStore = await cookies();
   const supabase = createRouteHandlerClient({ cookies: () => Promise.resolve(cookieStore) });
   const body = await req.json().catch(()=>({}));
-  const format = (String(body.format||'json').toLowerCase() as 'json'|'csv');
+  let format = (String(body.format||'json').toLowerCase() as 'json'|'csv');
   const payload = String(body.payload||'');
-  if (!payload || (format!=='json' && format!=='csv')) {
+  if (!payload) {
     return new Response(JSON.stringify({ ok:false, error:'bad_request' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+  }
+  // naive auto-detect: starts with [ → json array, starts with { → nested json
+  if (!body.format) {
+    const p = payload.trim();
+    if (p.startsWith('[') || p.startsWith('{')) format = 'json';
+    else if (p.includes(',') && p.split('\n')[0].includes('namespace')) format = 'csv';
   }
   // 2MB limit for preflight
   if (payload.length > 2_000_000) {
@@ -131,11 +140,18 @@ export async function POST(req: NextRequest) {
 
   // Validate locales against enabled system_locales
   const { data: locs } = await supabase.from('system_locales').select('code, enabled');
-  const allowed = new Set<string>((locs||[]).filter((l:any)=> l.enabled !== false).map((l:any)=> String(l.code)));
+  const enabledRows = (locs||[]).filter((l:any)=> l.enabled !== false);
+  const allowed = new Set<string>(enabledRows.map((l:any)=> String(l.code).toLowerCase()));
+  if (allowed.size === 0) {
+    // Local fallback when system_locales not seeded
+    ['en','en-us','uk','uk-ua'].forEach(c=>allowed.add(c));
+  }
   const invalidLocaleSamples: Array<{ namespace: string; key: string; locale: string }> = [];
   let invalidLocaleCount = 0;
   for (const it of items) {
-    if (!allowed.has(it.locale)) {
+    const loc = String(it.locale || '').toLowerCase();
+    const base = loc.split('-')[0];
+    if (!allowed.has(loc) && !allowed.has(base)) {
       invalidLocaleCount++;
       if (invalidLocaleSamples.length < 50) invalidLocaleSamples.push({ namespace: it.namespace, key: it.key, locale: it.locale });
     }

@@ -8,6 +8,8 @@ import { pruneOldJobsServer, deleteJobServer } from './actions';
 
 export const dynamic = 'force-dynamic';
 
+function tS(k: string, _p?: Record<string, any>, o?: { fallback?: string }) { return o?.fallback || k; }
+
 type IntegrationRow = {
   id: string;
   organization_id: string;
@@ -45,8 +47,8 @@ export default async function IntegrationsPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold">Інтеграція з Cartum</h1>
-      <p className="mt-2 text-gray-500">Підключіть ваш магазин на платформі Cartum для синхронізації.</p>
+      <h1 className="text-3xl font-bold">{tS('integrations.cartum.title', undefined, { fallback: 'Інтеграція з Cartum' })}</h1>
+      <p className="mt-2 text-gray-500">{tS('integrations.cartum.subtitle', undefined, { fallback: 'Підключіть ваш магазин на платформі Cartum для синхронізації.' })}</p>
 
       <SettingsForm
         defaults={{
@@ -60,30 +62,30 @@ export default async function IntegrationsPage() {
       )}
 
       {integration?.status === 'active' && (
-        <p className="mt-4 text-sm text-green-600">Статус: активна</p>
+        <p className="mt-4 text-sm text-green-600">{tS('integrations.cartum.status.active', undefined, { fallback: 'Статус: активна' })}</p>
       )}
 
       {/* Quick access to the Groups Tree UI */}
       <div className="mt-6">
-        <Link href="/dashboard/groups/tree" className="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-gray-50">Відкрити дерево сторінок (Cartum)</Link>
+        <Link href="/dashboard/groups/tree" className="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-gray-50">{tS('integrations.cartum.openTree', undefined, { fallback: 'Відкрити дерево сторінок (Cartum)' })}</Link>
       </div>
 
       {jobs.length > 0 && (
         <div className="mt-8 max-w-2xl rounded-lg border bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold">Останні завдання</h2>
+          <h2 className="text-lg font-semibold">{tS('integrations.cartum.recentJobs', undefined, { fallback: 'Останні завдання' })}</h2>
           <ul className="mt-3 divide-y">
             {jobs.map((j) => (
               <li key={j.id} className="flex items-center justify-between py-2">
                 <div>
                   <p className="text-sm font-medium">{j.kind}</p>
-                  <p className="text-xs text-gray-500">Статус: {j.status} · Створено: {j.created_at ? new Date(j.created_at).toLocaleString() : '-'}</p>
+                  <p className="text-xs text-gray-500">{tS('integrations.cartum.jobStatus', { status: j.status, created: j.created_at ? new Date(j.created_at).toLocaleString() : '-' }, { fallback: `Статус: ${j.status} · Створено: ${j.created_at ? new Date(j.created_at).toLocaleString() : '-'}` })}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Link href={`/dashboard/import/${j.id}`} className="text-sm text-zinc-800 underline">Відкрити</Link>
+                  <Link href={`/dashboard/import/${j.id}`} className="text-sm text-zinc-800 underline">{tS('integrations.cartum.open', undefined, { fallback: 'Відкрити' })}</Link>
                   <form action={deleteJobServer}>
                     <input type="hidden" name="job_id" value={j.id} />
                     <input type="hidden" name="organization_id" value={integration!.organization_id} />
-                    <button className="text-sm text-red-600 hover:underline" title="Видалити">Видалити</button>
+                    <button className="text-sm text-red-600 hover:underline" title={tS('integrations.cartum.delete', undefined, { fallback: 'Видалити' })}>{tS('integrations.cartum.delete', undefined, { fallback: 'Видалити' })}</button>
                   </form>
                 </div>
               </li>
@@ -91,7 +93,7 @@ export default async function IntegrationsPage() {
           </ul>
           <form action={pruneOldJobsServer} className="mt-4 flex justify-end">
             <input type="hidden" name="organization_id" value={integration!.organization_id} />
-            <button className="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-gray-50">Очистити історію (залишити 3)</button>
+            <button className="rounded-lg border bg:white px-4 py-2 text-sm hover:bg-gray-50">{tS('integrations.cartum.prune', undefined, { fallback: 'Очистити історію (залишити 3)' })}</button>
           </form>
         </div>
       )}
